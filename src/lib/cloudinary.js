@@ -15,7 +15,7 @@ export function isCloudinaryUrl(url) {
 }
 
 /**
- * แยก path หลัง /image/upload/ เป็น [transforms, publicId]
+ * แยก path หลัง /image/upload/ เป็น [transforms, publicId] และ base (origin + /image/upload)
  * เช่น /image/upload/e_improve,a_auto,q_auto,f_auto/abc123 -> ['e_improve,a_auto,q_auto,f_auto', 'abc123']
  */
 function parseCloudinaryPath(fullUrl) {
@@ -26,11 +26,12 @@ function parseCloudinaryPath(fullUrl) {
     if (!match) return null
     const afterUpload = match[1]
     const parts = afterUpload.split('/')
+    const base = `${u.origin}/image/upload`
     if (parts.length >= 2) {
       const publicId = parts.slice(1).join('/')
-      return { transform: parts[0], publicId }
+      return { transform: parts[0], publicId, base }
     }
-    return { transform: '', publicId: afterUpload }
+    return { transform: '', publicId: afterUpload, base }
   } catch {
     return null
   }
