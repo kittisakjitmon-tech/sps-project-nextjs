@@ -15,23 +15,41 @@ export function isCloudinaryUrl(url) {
 }
 
 /**
- * แยก path หลัง /image/upload/ เป็น [transforms, publicId] และ base (origin + /image/upload)
- * เช่น /image/upload/e_improve,a_auto,q_auto,f_auto/abc123 -> ['e_improve,a_auto,q_auto,f_auto', 'abc123']
+ * แยก path เป็น cloudName (ถ้ามี), transforms, publicId และ base
+ * โครงสร้าง: https://res.cloudinary.com/{cloudName}/image/upload/{transforms}/{publicId}
+ * หรือ (เก่า): https://res.cloudinary.com/image/upload/{publicId} → ใช้ CDN_BASE จาก env
  */
 function parseCloudinaryPath(fullUrl) {
   if (!isCloudinaryUrl(fullUrl)) return null
   try {
     const u = new URL(fullUrl)
-    const match = u.pathname.match(/\/image\/upload\/(.+)/)
-    if (!match) return null
-    const afterUpload = match[1]
-    const parts = afterUpload.split('/')
-    const base = `${u.origin}/image/upload`
-    if (parts.length >= 2) {
-      const publicId = parts.slice(1).join('/')
-      return { transform: parts[0], publicId, base }
+    const pathname = u.pathname
+
+    // รูปแบบมี cloud name: /{cloudName}/image/upload/...
+    const withCloud = pathname.match(/^\/([^/]+)\/image\/upload\/(.+)$/)
+    if (withCloud) {
+      const cloudName = withCloud[1]
+      const afterUpload = withCloud[2]
+      const base = `${u.origin}/${cloudName}/image/upload`
+      const parts = afterUpload.split('/')
+      if (parts.length >= 2) {
+        const publicId = parts.slice(1).join('/')
+        return { transform: parts[0], publicId, base }
+      }
+      return { transform: '', publicId: afterUpload, base }
     }
-    return { transform: '', publicId: afterUpload, base }
+
+    // รูปแบบไม่มี cloud name: /image/upload/... → ใช้ CDN_BASE
+    const noCloud = pathname.match(/^\/image\/upload\/(.+)$/)
+    if (noCloud && CDN_BASE) {
+      const afterUpload = noCloud[1]
+      const parts = afterUpload.split('/')
+      const publicId = parts.length >= 2 ? parts.slice(1).join('/') : afterUpload
+      const transform = parts.length >= 2 ? parts[0] : ''
+      return { transform, publicId, base: CDN_BASE }
+    }
+    if (noCloud) return null
+    return null
   } catch {
     return null
   }
@@ -48,6 +66,23 @@ function parseCloudinaryPath(fullUrl) {
  */
 export function getCloudinaryImageUrl(url, options = {}) {
   if (!url || typeof url !== 'string') return url
+
+  // ถ้าเป็นแค่ public_id (ไม่มี res.cloudinary.com) และมี CDN_BASE → สร้าง URL เอง
+  if (!isCloudinaryUrl(url) && CDN_BASE) {
+    const publicId = url.trim()
+    if (publicId && !publicId.includes('://') && !publicId.startsWith('/')) {
+      const { width, height, crop = 'fill', quality = 'auto', format = 'auto' } = options
+      const transforms = []
+      if (width) transforms.push(`w_${width}`)
+      if (height) transforms.push(`h_${height}`)
+      if ((width || height) && crop) transforms.push(`c_${crop}`)
+      transforms.push(`q_${quality}`)
+      transforms.push(`f_${format}`)
+      const transformStr = transforms.join(',')
+      return `${CDN_BASE}/${transformStr}/${publicId}`
+    }
+  }
+
   if (!isCloudinaryUrl(url)) return url
 
   const parsed = parseCloudinaryPath(url)

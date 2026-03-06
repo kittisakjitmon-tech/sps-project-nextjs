@@ -1,7 +1,6 @@
 'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import {
   CheckCircle2, Building2, Lightbulb, Handshake, TrendingUp,
   MapPin, MapPinned, Phone, MessageCircle, Users, Star, Award, Clock,
@@ -12,7 +11,7 @@ import PageLayout from '../components/PageLayout'
 import HomeSearch from '../components/HomeSearch'
 import DynamicPropertySection from '../components/DynamicPropertySection'
 import { getPropertiesOnce, getPopularLocationsOnce, getHomepageSectionsOnce, filterPropertiesByCriteria, getFeaturedBlogs } from '../lib/firestore'
-import { cloudinaryLoader, isCloudinaryUrl } from '../lib/cloudinary'
+import { getCloudinaryImageUrl, isCloudinaryUrl } from '../lib/cloudinary'
 import { useInView } from '../hooks/useInView'
 
 /** การ์ดทำเลยอดฮิต - placeholder น้ำเงินเป็นพื้นหลังเสมอ รูปทับด้านบนเมื่อโหลดได้ */
@@ -60,16 +59,16 @@ function PopularLocationCard({ loc, buildLocationPath, highPriority = false }) {
       {/* รูปทับด้านบน - z-[1] เมื่อโหลดสำเร็จจะปิด placeholder */}
       {showImage && isCloudinaryUrl(imageUrl) ? (
         <div className="absolute inset-0 z-[1] overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
-          <Image
+          <img
             key={imageUrl}
-            src={imageUrl}
-            loader={cloudinaryLoader}
+            src={getCloudinaryImageUrl(imageUrl, { width: 400, height: 225, crop: 'fill' })}
             alt={displayName}
             width={400}
             height={225}
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            loading={highPriority ? 'eager' : 'lazy'}
+            decoding="async"
+            fetchPriority={highPriority ? 'high' : 'auto'}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none"
-            priority={highPriority}
             draggable={false}
             onError={() => setFailedImageUrl(imageUrl)}
           />
@@ -395,15 +394,14 @@ export default function Home({ initialData = null }) {
                         {thumbnail ? (
                           <>
                             {isCloudinaryUrl(thumbnail) ? (
-                              <Image
-                                src={thumbnail}
-                                loader={cloudinaryLoader}
+                              <img
+                                src={getCloudinaryImageUrl(thumbnail, { width: 400, height: 225, crop: 'fill' })}
                                 alt={blog.title}
                                 width={400}
                                 height={225}
-                                sizes="(max-width: 768px) 100vw, 33vw"
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                 loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                               />
                             ) : (
                               <img
