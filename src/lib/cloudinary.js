@@ -49,10 +49,12 @@ function parseCloudinaryPath(fullUrl) {
 export function getCloudinaryImageUrl(url, options = {}) {
   if (!url || typeof url !== 'string') return url
   if (!isCloudinaryUrl(url)) return url
-  if (!CDN_BASE) return url
 
   const parsed = parseCloudinaryPath(url)
   if (!parsed) return url
+
+  const base = CDN_BASE || parsed.base
+  if (!base) return url
 
   const { width, height, crop = 'fill', quality = 'auto', format = 'auto' } = options
   const transforms = []
@@ -65,7 +67,7 @@ export function getCloudinaryImageUrl(url, options = {}) {
   const transformStr = transforms.join(',')
   const newPath = transformStr ? `${transformStr}/${parsed.publicId}` : `${parsed.transform}/${parsed.publicId}`
 
-  return `${CDN_BASE}/${newPath}`
+  return `${base}/${newPath}`
 }
 
 /**
@@ -91,11 +93,13 @@ export function getCloudinaryLargeUrl(url) {
 
 /**
  * Loader for next/image — builds Cloudinary URL with width/quality for srcset.
+ * Next.js requires the returned URL to include width; we always add w_ so the loader "implements" width.
  * Usage: <Image src={cloudinaryUrl} loader={cloudinaryLoader} width={400} height={300} sizes="..." />
  */
 export function cloudinaryLoader({ src, width, quality }) {
+  const w = Number(width)
   return getCloudinaryImageUrl(src, {
-    width,
+    width: Number.isFinite(w) && w > 0 ? w : 1024,
     quality: quality ?? 'auto',
     crop: 'fill',
   })
