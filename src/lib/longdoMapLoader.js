@@ -13,7 +13,7 @@ const LONGDO_SCRIPT_ID = 'longdo-map-sdk'
 let longdoLoadingPromise = null
 
 function getApiKey() {
-  return process.env.NEXT_PUBLIC_LONGDO_MAP_KEY
+  return process.env.NEXT_PUBLIC_LONGDO_MAP_KEY || ''
 }
 
 export function loadLongdoMap() {
@@ -29,7 +29,7 @@ export function loadLongdoMap() {
 
   const apiKey = getApiKey()
   if (!apiKey) {
-    longdoLoadingPromise = Promise.reject(new Error('Missing VITE_LONGDO_MAP_KEY'))
+    longdoLoadingPromise = Promise.reject(new Error('Missing NEXT_PUBLIC_LONGDO_MAP_KEY or VITE_LONGDO_MAP_KEY in .env'))
     return longdoLoadingPromise
   }
 

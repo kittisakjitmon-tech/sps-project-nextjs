@@ -11,7 +11,7 @@ import PageLayout from '../components/PageLayout'
 import HomeSearch from '../components/HomeSearch'
 import DynamicPropertySection from '../components/DynamicPropertySection'
 import { getPropertiesOnce, getPopularLocationsOnce, getHomepageSectionsOnce, filterPropertiesByCriteria, getFeaturedBlogs } from '../lib/firestore'
-import { getCloudinaryImageUrl, isCloudinaryUrl } from '../lib/cloudinary'
+import { getCloudinaryImageUrl } from '../lib/cloudinary'
 import { useInView } from '../hooks/useInView'
 
 /** การ์ดทำเลยอดฮิต - placeholder น้ำเงินเป็นพื้นหลังเสมอ รูปทับด้านบนเมื่อโหลดได้ */
@@ -57,7 +57,7 @@ function PopularLocationCard({ loc, buildLocationPath, highPriority = false }) {
         <MapPinned className="h-16 w-16 text-white/40" />
       </div>
       {/* รูปทับด้านบน - z-[1] เมื่อโหลดสำเร็จจะปิด placeholder */}
-      {showImage && isCloudinaryUrl(imageUrl) ? (
+      {showImage ? (
         <div className="absolute inset-0 z-[1] overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
           <img
             key={imageUrl}
@@ -70,19 +70,6 @@ function PopularLocationCard({ loc, buildLocationPath, highPriority = false }) {
             fetchPriority={highPriority ? 'high' : 'auto'}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none"
             draggable={false}
-            onError={() => setFailedImageUrl(imageUrl)}
-          />
-        </div>
-      ) : showImage ? (
-        <div className="absolute inset-0 z-[1] overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
-          <img
-            key={imageUrl}
-            src={imageUrl}
-            alt={displayName}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none"
-            loading={highPriority ? 'eager' : 'lazy'}
-            draggable={false}
-            fetchPriority={highPriority ? 'high' : 'auto'}
             onError={() => setFailedImageUrl(imageUrl)}
           />
         </div>
@@ -393,25 +380,15 @@ export default function Home({ initialData = null }) {
                       <div className="relative aspect-video bg-slate-100 overflow-hidden">
                         {thumbnail ? (
                           <>
-                            {isCloudinaryUrl(thumbnail) ? (
-                              <img
-                                src={getCloudinaryImageUrl(thumbnail, { width: 400, height: 225, crop: 'fill' })}
-                                alt={blog.title}
-                                width={400}
-                                height={225}
-                                loading="lazy"
-                                decoding="async"
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              />
-                            ) : (
-                              <img
-                                src={thumbnail}
-                                alt={blog.title}
-                                loading="lazy"
-                                decoding="async"
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                              />
-                            )}
+                            <img
+                              src={getCloudinaryImageUrl(thumbnail, { width: 400, height: 225, crop: 'fill' })}
+                              alt={blog.title}
+                              width={400}
+                              height={225}
+                              loading="lazy"
+                              decoding="async"
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
                             {hasVideo && (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                 <div className="bg-white/90 rounded-full p-3 shadow-lg group-hover:scale-110 transition-transform duration-300">

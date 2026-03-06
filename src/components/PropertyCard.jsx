@@ -4,7 +4,7 @@ import { MapPin, Bed, Bath, Heart } from 'lucide-react'
 import { useState, useEffect, memo } from 'react'
 import { isFavorite, toggleFavorite } from '../lib/favorites'
 import { formatPrice } from '../lib/priceFormat'
-import { getCloudinaryThumbUrl, isCloudinaryUrl } from '../lib/cloudinary'
+import { getCloudinaryThumbUrl } from '../lib/cloudinary'
 import ProtectedImageContainer from './ProtectedImageContainer'
 import { highlightText, highlightTags } from '../lib/textHighlight'
 import { getPropertyLabel } from '../constants/propertyTypes'
@@ -253,31 +253,18 @@ function PropertyCard({ property, featuredLabel = 'แนะนำ', searchQuery
           {/* Single Cover Image - Disable Slideshow */}
           <div className="relative aspect-[4/3] overflow-hidden rounded-t-2xl">
             <ProtectedImageContainer className="absolute inset-0 w-full h-full" propertyId={property.propertyId}>
-              {coverImage && isCloudinaryUrl(coverImage) ? (
-                <img
-                  src={getCloudinaryThumbUrl(coverImage)}
-                  alt={`${getPropertyLabel(property.type) || 'อสังหาริมทรัพย์'} โครงการ ${property.title} ทำเล ${property.location?.district || ''}, ${property.location?.province || ''}`}
-                  width={400}
-                  height={300}
-                  loading="lazy"
-                  decoding="async"
-                  className="w-full h-full object-cover protected-image transition-transform duration-700 ease-in-out group-hover:scale-110"
-                  draggable={false}
-                  onContextMenu={(e) => e.preventDefault()}
-                  onDragStart={(e) => e.preventDefault()}
-                />
-              ) : (
-                <img
-                  src={coverImage || DEFAULT_IMAGE}
-                  alt={`${getPropertyLabel(property.type) || 'อสังหาริมทรัพย์'} โครงการ ${property.title}`}
-                  className="w-full h-full object-cover protected-image transition-transform duration-700 ease-in-out group-hover:scale-110"
-                  loading="lazy"
-                  decoding="async"
-                  draggable={false}
-                  onContextMenu={(e) => e.preventDefault()}
-                  onDragStart={(e) => e.preventDefault()}
-                />
-              )}
+              <img
+                src={coverImage ? getCloudinaryThumbUrl(coverImage) : DEFAULT_IMAGE}
+                alt={`${getPropertyLabel(property.type) || 'อสังหาริมทรัพย์'} โครงการ ${property.title} ทำเล ${property.location?.district || ''}, ${property.location?.province || ''}`}
+                width={400}
+                height={300}
+                loading="lazy"
+                decoding="async"
+                className="w-full h-full object-cover protected-image transition-transform duration-700 ease-in-out group-hover:scale-110"
+                draggable={false}
+                onContextMenu={(e) => e.preventDefault()}
+                onDragStart={(e) => e.preventDefault()}
+              />
             </ProtectedImageContainer>
           </div>
           {/* Top Left Section - Transaction Type Badge + Favorite Button + Other Badges */}

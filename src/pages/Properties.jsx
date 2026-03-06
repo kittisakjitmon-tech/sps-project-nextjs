@@ -21,8 +21,18 @@ import { filterProperties } from '../lib/globalSearch'
 import { useTypingPlaceholder } from '../components/TypingPlaceholder'
 import { SafeHelmet } from '@/components/SafeHelmet'
 
+/** Safe string for URLSearchParams (never throws). */
+function toParamsString(sp) {
+  try {
+    const s = sp?.toString?.()
+    return typeof s === 'string' ? s : ''
+  } catch {
+    return ''
+  }
+}
+
 export default function Properties({ initialProperties = null } = {}) {
-  const [searchParamsFromHook, setSearchParams] = useSearchParams()
+  const [searchParamsFromHook] = useSearchParams()
   const searchParams = useMemo(() => toSafeSearchParams(searchParamsFromHook), [searchParamsFromHook])
   const router = useRouter()
   const navigate = router.push.bind(router)
@@ -44,11 +54,9 @@ export default function Properties({ initialProperties = null } = {}) {
   const [properties, setProperties] = useState(Array.isArray(initialProperties) ? initialProperties : [])
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(false)
 
-  // State Separation: แยกตัวแปรออกเป็น 2 ตัว
-  // Priority: 'search' parameter (from tag clicks) > 'q' parameter (from manual search)
-  const initialKeyword = searchParams.get('search') || searchParams.get('q') || ''
-  const [searchQuery, setSearchQuery] = useState(initialKeyword) // ค่าจริงที่ผู้ใช้พิมพ์ (State Update Only)
-  const [debouncedKeyword, setDebouncedKeyword] = useState(initialKeyword) // ค่าที่ใช้สำหรับ Filter (อัปเดตเมื่อกดปุ่มค้นหาเท่านั้น)
+  // State Separation: แยกตัวแปรออกเป็น 2 ตัว (initialize empty to avoid setState-during-render; synced in useEffect)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedKeyword, setDebouncedKeyword] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const [displayLimit, setDisplayLimit] = useState(12)
 
@@ -108,8 +116,7 @@ export default function Properties({ initialProperties = null } = {}) {
   const isRentalFilter = typeParam === 'rent' ? true : typeParam === 'buy' ? false : null
 
   // Sync searchQuery and debouncedKeyword with URL (เมื่อ URL เปลี่ยนจากภายนอกเท่านั้น)
-  // ไม่ sync เมื่อผู้ใช้กำลังพิมพ์ (เพื่อป้องกันการ reset ค่า)
-  const prevSearchParamsRef = useRef(searchParams.toString())
+  const prevSearchParamsRef = useRef(null)
   useEffect(() => {
     const currentParams = searchParams.toString()
     const urlKeyword = searchParams.get('q') || ''
@@ -129,7 +136,7 @@ export default function Properties({ initialProperties = null } = {}) {
 
         // If 'search' parameter exists, also update 'q' parameter for consistency
         if (urlSearch && !urlKeyword) {
-          const params = new URLSearchParams(searchParams.toString())
+          const params = new URLSearchParams(toParamsString(searchParams))
           params.set('q', urlSearch)
           params.delete('search') // Remove 'search' parameter after converting to 'q'
           router.replace(`/properties?${params.toString()}`)
@@ -201,7 +208,7 @@ export default function Properties({ initialProperties = null } = {}) {
 
   // AI Recommendation: URL State Synchronization
   const updateURL = useCallback((updates) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(toParamsString(searchParams))
 
     // Preserve type (buy/rent) if exists
     if (typeParam) params.set('type', typeParam)
@@ -246,7 +253,7 @@ export default function Properties({ initialProperties = null } = {}) {
     const trimmedQuery = searchQuery.trim()
     setDebouncedKeyword(trimmedQuery)
 
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(toParamsString(searchParams))
     if (trimmedQuery) {
       params.set('q', trimmedQuery)
     } else {
@@ -273,7 +280,7 @@ export default function Properties({ initialProperties = null } = {}) {
     setDebouncedKeyword('')
     startTyping()
     // Update URL to remove both 'q' and 'search' parameters
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(toParamsString(searchParams))
     params.delete('q')
     params.delete('search') // Also remove 'search' parameter from tag clicks
     if (typeParam) params.set('type', typeParam)
@@ -299,7 +306,7 @@ export default function Properties({ initialProperties = null } = {}) {
 
   // Handle Remove Individual Filter
   const handleRemoveFilter = useCallback((filter) => {
-    const params = new URLSearchParams(searchParams.toString())
+    const params = new URLSearchParams(toParamsString(searchParams))
 
     switch (filter.type) {
       case 'keyword':
