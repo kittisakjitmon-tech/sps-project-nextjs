@@ -1,4 +1,26 @@
-# Logs
+# Dependencies
+node_modules/
+functions/node_modules/
+.pnp
+.pnp.js
+
+# Build & output
+.next/
+out/
+dist/
+dist-ssr/
+build/
+
+# Environment & secrets (never commit)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+functions/.env
+
+# Logs & debug
 logs/
 *.log
 npm-debug.log*
@@ -7,40 +29,36 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Node / dependencies
-node_modules/
-functions/node_modules/
-
-# Build output
-dist/
-dist-ssr/
-
-# Vite / tooling caches
-.eslintcache
-*.local
-
-# Environment & secrets
-.env
-.env.local
-.env.development.local
-.env.production.local
-.env.test.local
-functions/.env
-
-# Firebase local state
+# Firebase
 .firebase/
-.firebase/*cache*
+*.cache
 
-# OS / editor
+# Caches
+.eslintcache
+.turbo
+*.tsbuildinfo
+
+# OS
 .DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+
+# IDE / editor
 .idea/
 .vscode/*
 !.vscode/extensions.json
-# Misc editor / project files
-.antigravity
+!.vscode/settings.json
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
+
+# Cursor (optional)
+.cursor/
+
+# Misc
+.antigravity
+.vercel
