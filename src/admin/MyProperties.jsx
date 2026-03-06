@@ -1,5 +1,6 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { getPropertiesSnapshot } from '../lib/firestore'
 import PropertyCard from '../components/PropertyCard'
@@ -58,7 +59,7 @@ export default function MyProperties() {
           </p>
         </div>
         <Link
-          to="/sps-internal-admin/properties/new"
+          href="/sps-internal-admin/properties/new"
           className="flex items-center gap-2 px-4 py-2 bg-blue-900 text-white font-semibold rounded-lg hover:bg-blue-800 transition"
         >
           <Plus className="h-5 w-5" />
@@ -93,7 +94,7 @@ export default function MyProperties() {
           <p className="text-lg font-medium text-slate-700 mb-2">ยังไม่มีประกาศ</p>
           <p className="text-slate-600 mb-6">เริ่มต้นด้วยการเพิ่มประกาศแรกของคุณ</p>
           <Link
-            to="/sps-internal-admin/properties/new"
+            href="/sps-internal-admin/properties/new"
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-900 text-white font-semibold rounded-lg hover:bg-blue-800 transition"
           >
             <Plus className="h-5 w-5" />
@@ -106,7 +107,7 @@ export default function MyProperties() {
             <div key={property.id} className="relative">
               <PropertyCard property={property} />
               <Link
-                to={`/sps-internal-admin/properties/edit/${property.id}`}
+                href={`/sps-internal-admin/properties/edit/${property.id}`}
                 className="absolute inset-0"
                 aria-label={`แก้ไข ${property.title}`}
               />

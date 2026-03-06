@@ -11,8 +11,12 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!auth) {
+      setLoading(false)
+      return
+    }
     const unsub = onAuthStateChanged(auth, async (u) => {
-      if (u) {
+      if (u && db) {
         // ดึง role จาก Firestore users collection
         try {
           const userDoc = await getDoc(doc(db, 'users', u.uid))
@@ -42,11 +46,12 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
+    if (!auth) throw new Error('Firebase Auth is not available')
     await signInWithEmailAndPassword(auth, email, password)
   }
 
   const logout = async () => {
-    await signOut(auth)
+    if (auth) await signOut(auth)
     setUserRole(null)
   }
 

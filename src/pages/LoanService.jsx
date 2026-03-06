@@ -1,6 +1,7 @@
+'use client'
 import { useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Helmet } from 'react-helmet-async'
+import { useRouter } from 'next/navigation'
+import { SafeHelmet } from '@/components/SafeHelmet'
 import PageLayout from '../components/PageLayout'
 import { createLoanRequest } from '../lib/firestore'
 import {
@@ -41,7 +42,7 @@ const LINE_URL = 'https://line.me/R/ti/p/@sps-property'
 
 export default function LoanService() {
   const formSectionRef = useRef(null)
-  const navigate = useNavigate()
+  const router = useRouter()
 
   // Calculator state
   const [debtAmount, setDebtAmount] = useState('')
@@ -145,15 +146,15 @@ export default function LoanService() {
 
   const handleGoInstallment = () => {
     handleCloseModal()
-    navigate('/properties?listingType=rent&subListingType=installment_only')
+    router.push('/properties?listingType=rent&subListingType=installment_only')
   }
 
   return (
     <>
-      <Helmet>
+      <SafeHelmet>
         <title>ปลดล็อคชีวิตการเงินด้วยอสังหาฯ | SPS Property Solution</title>
         <meta name="description" content="เปลี่ยนหนี้บัตรหลายใบเป็นบ้านหลังเดียว ผ่อนถูกลงครึ่งต่อครึ่ง ปิดหนี้ให้ก่อน ไม่ผ่านคืนเงินจอง" />
-      </Helmet>
+      </SafeHelmet>
       <PageLayout showHero={false}>
         <div className="min-h-screen bg-slate-50">
           {/* Hero Section */}

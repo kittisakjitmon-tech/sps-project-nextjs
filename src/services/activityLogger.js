@@ -40,6 +40,7 @@ export async function logActivity({ action, target, details, currentUser, status
     },
   }
 
+  if (!db) return null
   try {
     const docRef = await addDoc(collection(db, ACTIVITIES_COLLECTION), payload)
     return docRef.id

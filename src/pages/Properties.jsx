@@ -1,21 +1,31 @@
-import { useSearchParams, Link, useNavigate } from 'react-router-dom'
+'use client'
+import dynamic from 'next/dynamic'
+import { useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { toSafeSearchParams } from '@/lib/next-router'
 import { useSearch } from '../context/SearchContext'
 import { getPropertiesSnapshot } from '../lib/firestore'
 import PageLayout from '../components/PageLayout'
 import PropertyCard from '../components/PropertyCard'
-import PropertiesMap from '../components/PropertiesMap'
 import FilterSidebar from '../components/FilterSidebar'
+
+const PropertiesMap = dynamic(
+  () => import('../components/PropertiesMap').then((m) => m.default),
+  { ssr: false, loading: () => <div className="w-full h-[400px] bg-slate-100 rounded-xl animate-pulse flex items-center justify-center text-slate-400 text-sm">กำลังโหลดแผนที่…</div> }
+)
 import ActiveSearchCriteriaBar from '../components/ActiveSearchCriteriaBar'
 import { SlidersHorizontal, Search, X, Wallet, Landmark, SearchX } from 'lucide-react'
 import { searchProperties } from '../lib/smartSearch'
 import { filterProperties } from '../lib/globalSearch'
 import { useTypingPlaceholder } from '../components/TypingPlaceholder'
-import { Helmet } from 'react-helmet-async'
+import { SafeHelmet } from '@/components/SafeHelmet'
 
-export default function Properties() {
-  const [searchParams, setSearchParams] = useSearchParams()
-  const navigate = useNavigate()
+export default function Properties({ initialProperties = null } = {}) {
+  const [searchParamsFromHook, setSearchParams] = useSearchParams()
+  const searchParams = useMemo(() => toSafeSearchParams(searchParamsFromHook), [searchParamsFromHook])
+  const router = useRouter()
+  const navigate = router.push.bind(router)
 
   // Safety check for useSearch context
   let filters, updateFilters, clearFilters
@@ -31,7 +41,7 @@ export default function Properties() {
     clearFilters = () => { }
   }
 
-  const [properties, setProperties] = useState([])
+  const [properties, setProperties] = useState(Array.isArray(initialProperties) ? initialProperties : [])
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(false)
 
   // State Separation: แยกตัวแปรออกเป็น 2 ตัว
@@ -119,10 +129,10 @@ export default function Properties() {
 
         // If 'search' parameter exists, also update 'q' parameter for consistency
         if (urlSearch && !urlKeyword) {
-          const params = new URLSearchParams(searchParams)
+          const params = new URLSearchParams(searchParams.toString())
           params.set('q', urlSearch)
           params.delete('search') // Remove 'search' parameter after converting to 'q'
-          navigate(`/properties?${params.toString()}`, { replace: true })
+          router.replace(`/properties?${params.toString()}`)
         }
       } else {
         // If no keyword, sync empty state
@@ -191,7 +201,7 @@ export default function Properties() {
 
   // AI Recommendation: URL State Synchronization
   const updateURL = useCallback((updates) => {
-    const params = new URLSearchParams(searchParams)
+    const params = new URLSearchParams(searchParams.toString())
 
     // Preserve type (buy/rent) if exists
     if (typeParam) params.set('type', typeParam)
@@ -205,7 +215,7 @@ export default function Properties() {
       }
     })
 
-    navigate(`/properties?${params.toString()}`, { replace: true })
+    router.replace(`/properties?${params.toString()}`)
   }, [searchParams, navigate, typeParam])
 
   const handleSearch = () => {
@@ -236,7 +246,7 @@ export default function Properties() {
     const trimmedQuery = searchQuery.trim()
     setDebouncedKeyword(trimmedQuery)
 
-    const params = new URLSearchParams(searchParams)
+    const params = new URLSearchParams(searchParams.toString())
     if (trimmedQuery) {
       params.set('q', trimmedQuery)
     } else {
@@ -246,7 +256,7 @@ export default function Properties() {
 
     // อัปเดต ref ก่อน navigate เพื่อป้องกัน useEffect sync กลับ
     prevSearchParamsRef.current = params.toString()
-    navigate(`/properties?${params.toString()}`, { replace: false })
+    router.push(`/properties?${params.toString()}`)
   }, [searchQuery, searchParams, navigate, typeParam])
 
   // Handle Enter Key
@@ -263,11 +273,11 @@ export default function Properties() {
     setDebouncedKeyword('')
     startTyping()
     // Update URL to remove both 'q' and 'search' parameters
-    const params = new URLSearchParams(searchParams)
+    const params = new URLSearchParams(searchParams.toString())
     params.delete('q')
     params.delete('search') // Also remove 'search' parameter from tag clicks
     if (typeParam) params.set('type', typeParam)
-    navigate(`/properties?${params.toString()}`, { replace: true })
+    router.replace(`/properties?${params.toString()}`)
     // Focus back to input
     const inputElement = document.querySelector('input[type="text"][placeholder*="ค้นหา"]')
     if (inputElement) {
@@ -284,12 +294,12 @@ export default function Properties() {
     params.delete('search')
     params.delete('tag')
     if (typeParam) params.set('type', typeParam)
-    navigate(`/properties?${params.toString()}`, { replace: true })
+    router.replace(`/properties?${params.toString()}`)
   }
 
   // Handle Remove Individual Filter
   const handleRemoveFilter = useCallback((filter) => {
-    const params = new URLSearchParams(searchParams)
+    const params = new URLSearchParams(searchParams.toString())
 
     switch (filter.type) {
       case 'keyword':
@@ -347,7 +357,7 @@ export default function Properties() {
     // Preserve type if exists
     if (typeParam) params.set('type', typeParam)
 
-    navigate(`/properties?${params.toString()}`, { replace: true })
+    router.replace(`/properties?${params.toString()}`)
   }, [searchParams, navigate, typeParam, updateFilters])
 
   // Unified Global Search with Combined Filtering (AND Logic)
@@ -558,7 +568,7 @@ export default function Properties() {
                     <h3 className="text-base font-bold text-blue-900 mb-4">บริการแนะนำจาก SPS</h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <Link
-                        to="/loan-services"
+                        href="/loan-services"
                         className="group flex items-center gap-4 bg-white rounded-xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-slate-100"
                       >
                         <div className="w-11 h-11 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 group-hover:bg-blue-200 transition-colors">
@@ -570,7 +580,7 @@ export default function Properties() {
                         </div>
                       </Link>
                       <Link
-                        to="/loan-services"
+                        href="/loan-services"
                         className="group flex items-center gap-4 bg-white rounded-xl p-5 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-slate-100"
                       >
                         <div className="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0 group-hover:bg-emerald-200 transition-colors">

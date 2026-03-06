@@ -1,5 +1,8 @@
-import { useState, useId } from 'react'
-import { useNavigate, useLocation, Link } from 'react-router-dom'
+'use client'
+import { useState, useId, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import Link from 'next/link'
+import { toSafeSearchParams } from '@/lib/next-router'
 import { usePublicAuth } from '../context/PublicAuthContext'
 import { getAuthErrorMessage } from '../lib/authErrorMessages'
 import { LogIn } from 'lucide-react'
@@ -11,9 +14,10 @@ export default function PublicLogin() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { login } = usePublicAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const from = location.state?.from?.pathname ?? '/'
+  const router = useRouter()
+  const rawParams = useSearchParams()
+  const searchParams = useMemo(() => toSafeSearchParams(rawParams), [rawParams])
+  const from = searchParams.get('from') || '/'
   const idEmail = useId()
   const idPassword = useId()
 
@@ -23,7 +27,7 @@ export default function PublicLogin() {
     setSubmitting(true)
     try {
       await login(email, password)
-      navigate(from, { replace: true })
+      router.replace(from)
     } catch (err) {
       setError(getAuthErrorMessage(err))
     } finally {
@@ -74,7 +78,7 @@ export default function PublicLogin() {
             </button>
           </form>
           <div className="mt-4 text-center">
-            <Link to="/" className="text-sm text-blue-900 hover:underline">
+            <Link href="/" className="text-sm text-blue-900 hover:underline">
               กลับหน้าหลัก
             </Link>
           </div>

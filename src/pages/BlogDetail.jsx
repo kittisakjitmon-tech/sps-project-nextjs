@@ -1,18 +1,24 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import { Calendar, ArrowLeft, Play } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
 import { getBlogByIdOnce } from '../lib/firestore'
-import { Helmet } from 'react-helmet-async'
+import { SafeHelmet } from '@/components/SafeHelmet'
 import { getCloudinaryLargeUrl, getCloudinaryMediumUrl } from '../lib/cloudinary'
 
 export default function BlogDetail() {
-  const { id } = useParams()
+  const params = useParams()
+  const id = params?.id ?? null
   const [blog, setBlog] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!id) return
+    if (!id) {
+      setLoading(false)
+      return
+    }
 
     const loadBlog = async () => {
       try {
@@ -81,7 +87,7 @@ export default function BlogDetail() {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-slate-900 mb-4">ไม่พบบทความ</h1>
             <Link
-              to="/blogs"
+              href="/blogs"
               className="inline-flex items-center gap-2 text-blue-900 hover:underline"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -101,16 +107,16 @@ export default function BlogDetail() {
 
   return (
     <>
-      <Helmet>
+      <SafeHelmet>
         <title>{title}</title>
         <meta name="description" content={description} />
         <link rel="canonical" href={`https://spspropertysolution.com/blogs/${blog.id}`} />
-      </Helmet>
+      </SafeHelmet>
       <PageLayout>
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Back Button */}
           <Link
-            to="/blogs"
+            href="/blogs"
             className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-900 mb-6 transition"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -182,7 +188,7 @@ export default function BlogDetail() {
           {/* Back to Blogs */}
           <div className="mt-12 pt-8 border-t border-slate-200">
             <Link
-              to="/blogs"
+              href="/blogs"
               className="inline-flex items-center gap-2 text-blue-900 hover:underline font-medium"
             >
               <ArrowLeft className="h-5 w-5" />

@@ -1,5 +1,7 @@
-import { useState, useId } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
+'use client'
+import { useState, useId, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { toSafeSearchParams } from '@/lib/next-router'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import { getAuthErrorMessage } from '../lib/authErrorMessages'
 import { LogIn } from 'lucide-react'
@@ -10,9 +12,10 @@ export default function Login() {
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const { login } = useAdminAuth()
-  const navigate = useNavigate()
-  const location = useLocation()
-  const from = location.state?.from?.pathname ?? '/sps-internal-admin'
+  const router = useRouter()
+  const rawParams = useSearchParams()
+  const searchParams = useMemo(() => toSafeSearchParams(rawParams), [rawParams])
+  const from = searchParams.get('from') || '/sps-internal-admin'
   const idEmail = useId()
   const idPassword = useId()
 
@@ -22,7 +25,7 @@ export default function Login() {
     setSubmitting(true)
     try {
       await login(email, password)
-      navigate(from, { replace: true })
+      router.replace(from)
     } catch (err) {
       setError(getAuthErrorMessage(err))
     } finally {

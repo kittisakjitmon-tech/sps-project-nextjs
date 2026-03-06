@@ -1,9 +1,10 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { ChevronLeft, ChevronRight, Calendar, Play } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
 import { getPublishedBlogs } from '../lib/firestore'
-import { Helmet } from 'react-helmet-async'
+import { SafeHelmet } from '@/components/SafeHelmet'
 
 export default function Blogs() {
   const [blogs, setBlogs] = useState([])
@@ -91,11 +92,11 @@ export default function Blogs() {
 
   return (
     <>
-      <Helmet>
+      <SafeHelmet>
         <title>บทความอสังหาริมทรัพย์และบ้าน | SPS Property Solution</title>
         <meta name="description" content="อ่านบทความและสาระน่ารู้เกี่ยวกับอสังหาริมทรัพย์ บ้าน ทาวน์โฮม คอนโด การกู้สินเชื่อ และเคล็ดลับการลงทุนจาก SPS Property Solution" />
         <link rel="canonical" href="https://spspropertysolution.com/blogs" />
-      </Helmet>
+      </SafeHelmet>
       <PageLayout>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="mb-8">
@@ -117,7 +118,7 @@ export default function Blogs() {
                   return (
                     <Link
                       key={blog.id}
-                      to={`/blogs/${blog.id}`}
+                      href={`/blogs/${blog.id}`}
                       className="group bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-all duration-300"
                     >
                       {/* Cover Image */}

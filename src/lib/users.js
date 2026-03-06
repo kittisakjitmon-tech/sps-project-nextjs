@@ -27,6 +27,7 @@ function normalizeEmail(email) {
  * Get user by ID
  */
 export async function getUserById(userId) {
+  if (!db) return null
   const userDoc = await getDoc(doc(db, USERS, userId))
   if (!userDoc.exists()) return null
   return { id: userDoc.id, ...userDoc.data() }
@@ -36,6 +37,10 @@ export async function getUserById(userId) {
  * Get all users snapshot (real-time)
  */
 export function getUsersSnapshot(callback) {
+  if (!db) {
+    callback([])
+    return () => {}
+  }
   const q = collection(db, USERS)
   return onSnapshot(q, (snap) => {
     const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -52,6 +57,7 @@ export function getUsersSnapshot(callback) {
  * Get users by role
  */
 export async function getUsersByRole(role) {
+  if (!db) return []
   const q = query(collection(db, USERS), where('role', '==', role))
   const snap = await getDocs(q)
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -61,6 +67,7 @@ export async function getUsersByRole(role) {
  * Create user
  */
 export async function createUser(userId, data) {
+  if (!db) throw new Error('Firebase Firestore is not available')
   await setDoc(doc(db, USERS, userId), {
     ...data,
     createdAt: serverTimestamp(),
@@ -75,6 +82,7 @@ export async function createUser(userId, data) {
 export async function createUserByEmail({ email, role = 'member', status = 'active' }) {
   const normalized = normalizeEmail(email)
   if (!normalized) throw new Error('Email is required')
+  if (!db) throw new Error('Firebase Firestore is not available')
 
   const userRef = doc(db, USERS, normalized)
   const existing = await getDoc(userRef)
@@ -165,6 +173,7 @@ export async function createUserWithPassword({
  * Update user
  */
 export async function updateUser(userId, data) {
+  if (!db) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, USERS, userId), {
     ...data,
     updatedAt: serverTimestamp(),
@@ -175,6 +184,7 @@ export async function updateUser(userId, data) {
  * Update user role
  */
 export async function updateUserRole(userId, role) {
+  if (!db) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, USERS, userId), {
     role,
     updatedAt: serverTimestamp(),
@@ -185,6 +195,7 @@ export async function updateUserRole(userId, role) {
  * Delete user
  */
 export async function deleteUser(userId) {
+  if (!db) throw new Error('Firebase Firestore is not available')
   await deleteDoc(doc(db, USERS, userId))
 }
 
@@ -192,6 +203,7 @@ export async function deleteUser(userId) {
  * Suspend user (set status to 'suspended')
  */
 export async function suspendUser(userId) {
+  if (!db) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, USERS, userId), {
     status: 'suspended',
     updatedAt: serverTimestamp(),
@@ -202,6 +214,7 @@ export async function suspendUser(userId) {
  * Unsuspend user (remove suspended status)
  */
 export async function unsuspendUser(userId) {
+  if (!db) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, USERS, userId), {
     status: 'active',
     updatedAt: serverTimestamp(),

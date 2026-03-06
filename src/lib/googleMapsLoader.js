@@ -7,7 +7,7 @@ export function loadGoogleMapsApi({ libraries = [] } = {}) {
   if (window.google?.maps?.importLibrary) return Promise.resolve(window.google)
   if (googleMapsLoadingPromise) return googleMapsLoadingPromise
 
-  const apiKey = import.meta.env.VITE_GOOGLE_PLACES_API_KEY
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_PLACES_API_KEY
   if (!apiKey) {
     return Promise.reject(new Error('Missing VITE_GOOGLE_PLACES_API_KEY'))
   }

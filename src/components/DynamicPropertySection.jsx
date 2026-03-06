@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { ChevronRight } from 'lucide-react'
 import PropertySlider from './PropertySlider'
 
@@ -92,7 +92,7 @@ export default function DynamicPropertySection({
             {subtitle && <p className="text-slate-500 text-sm mt-1.5 ml-4">{subtitle}</p>}
           </div>
           <Link
-            to={viewAllHref}
+            href={viewAllHref}
             className="inline-flex items-center gap-1 text-sm font-semibold text-blue-900 border border-blue-200 bg-blue-50 hover:bg-blue-900 hover:text-white px-4 py-1.5 rounded-full transition-all duration-200 shrink-0"
           >
             ดูทั้งหมด

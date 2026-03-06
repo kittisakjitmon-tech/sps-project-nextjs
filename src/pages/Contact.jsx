@@ -1,5 +1,6 @@
+'use client'
 import { useState, useId } from 'react'
-import { Helmet } from 'react-helmet-async'
+import { SafeHelmet } from '@/components/SafeHelmet'
 import { MapPin, Phone, Mail, Facebook, Clock, Globe2, CheckCircle2 } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
 import { createInquiry } from '../lib/firestore'
@@ -79,9 +80,9 @@ export default function Contact() {
 
   return (
     <>
-      <Helmet>
+      <SafeHelmet>
         <title>ติดต่อเรา | SPS Property Solution - บ้านคอนโดสวย อมตะซิตี้ ชลบุรี</title>
-      </Helmet>
+      </SafeHelmet>
       <PageLayout heroTitle="ติดต่อเรา" heroSubtitle="บ้านคอนโดสวย อมตะซิตี้ ชลบุรี" searchComponent={null}>
         <div className="py-12 md:py-16 bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50 min-h-screen">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

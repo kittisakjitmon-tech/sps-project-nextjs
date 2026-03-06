@@ -1,10 +1,12 @@
 import { useEffect, useState, useRef } from 'react'
+import Image from 'next/image'
 import { Swiper, SwiperSlide } from 'swiper/react'
 import { Autoplay, EffectFade, Pagination } from 'swiper/modules'
 import 'swiper/css'
 import 'swiper/css/effect-fade'
 import 'swiper/css/pagination'
 import { getHeroSlidesOnce } from '../lib/firestore'
+import { cloudinaryLoader, isCloudinaryUrl } from '../lib/cloudinary'
 
 const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1280&q=80&auto=format'
 
@@ -71,20 +73,35 @@ export default function HeroSlider({ children, className = '' }) {
       >
         {slides.map((slide, index) => {
           const imageUrl = getSlideImageUrl(slide)
+          const isFirst = index === 0
           return (
             <SwiperSlide key={slide.id} style={{ height: '100%', minHeight: '85vh' }}>
-              {/* ใช้ <img> แทน background-image เพื่อให้ browser preload/lazy load ได้ */}
-              <img
-                src={imageUrl}
-                alt=""
-                width={1920}
-                height={1080}
-                className="absolute inset-0 w-full h-full object-cover"
-                loading={index === 0 ? 'eager' : 'lazy'}
-                fetchPriority={index === 0 ? 'high' : 'auto'}
-                decoding="async"
-                aria-hidden="true"
-              />
+              {isCloudinaryUrl(imageUrl) ? (
+                <Image
+                  src={imageUrl}
+                  loader={cloudinaryLoader}
+                  alt=""
+                  width={1920}
+                  height={1080}
+                  sizes="100vw"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  priority={isFirst}
+                  loading={isFirst ? undefined : 'lazy'}
+                  aria-hidden="true"
+                />
+              ) : (
+                <img
+                  src={imageUrl}
+                  alt=""
+                  width={1920}
+                  height={1080}
+                  className="absolute inset-0 w-full h-full object-cover"
+                  loading={isFirst ? 'eager' : 'lazy'}
+                  fetchPriority={isFirst ? 'high' : 'auto'}
+                  decoding="async"
+                  aria-hidden="true"
+                />
+              )}
             </SwiperSlide>
           )
         })}

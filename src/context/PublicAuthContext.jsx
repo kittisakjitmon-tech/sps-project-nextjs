@@ -12,8 +12,12 @@ export function PublicAuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!publicAuth) {
+      setLoading(false)
+      return
+    }
     const unsub = onAuthStateChanged(publicAuth, async (u) => {
-      if (u) {
+      if (u && publicDb) {
         // ดึง role จาก Firestore users collection
         try {
           const userDoc = await getDoc(doc(publicDb, 'users', u.uid))
@@ -49,8 +53,9 @@ export function PublicAuthProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
+    if (!publicAuth) throw new Error('Firebase Auth is not available')
     const cred = await signInWithEmailAndPassword(publicAuth, email, password)
-
+    if (!publicDb) return
     // อนุญาตให้ล็อกอินฝั่งหน้าบ้านเฉพาะ role = 'agent'
     try {
       const userDoc = await getDoc(doc(publicDb, 'users', cred.user.uid))
@@ -62,8 +67,7 @@ export function PublicAuthProvider({ children }) {
         throw error
       }
     } catch (err) {
-      // ถ้าดึง role ไม่ได้ ให้ปิด session ทิ้งและแจ้งว่าไม่อนุญาต
-      await signOut(publicAuth)
+      if (publicAuth) await signOut(publicAuth)
       if (!err.code) {
         err.code = 'auth/not-agent'
       }
@@ -72,7 +76,7 @@ export function PublicAuthProvider({ children }) {
   }
 
   const logout = async () => {
-    await signOut(publicAuth)
+    if (publicAuth) await signOut(publicAuth)
     setUserRole(null)
     setUserProfile(null)
   }
@@ -111,8 +115,22 @@ export function PublicAuthProvider({ children }) {
   )
 }
 
+const defaultAuthState = {
+  user: null,
+  userRole: null,
+  userProfile: null,
+  loading: true,
+  login: async () => {},
+  logout: async () => {},
+  hasRole: () => false,
+  isSuperAdmin: () => false,
+  isAdmin: () => false,
+  isMember: () => false,
+  isAgent: () => false,
+}
+
 export function usePublicAuth() {
   const ctx = useContext(PublicAuthContext)
-  if (!ctx) throw new Error('usePublicAuth must be used within PublicAuthProvider')
+  if (!ctx) return defaultAuthState
   return ctx
 }

@@ -6,7 +6,7 @@ import { parseCoordinatesFromUrl } from '../lib/googleMapsUrl'
 import { updatePropertyById } from '../lib/firestore'
 
 const LONGDO_POI_API = 'https://api.longdo.com/POIService/json/search'
-const LONGDO_KEY = import.meta.env.VITE_LONGDO_MAP_KEY
+const LONGDO_KEY = process.env.NEXT_PUBLIC_LONGDO_MAP_KEY
 const MAX_DISTANCE_KM = 20
 const MAX_PER_CATEGORY = 3
 const SEARCH_SPAN = '20km'

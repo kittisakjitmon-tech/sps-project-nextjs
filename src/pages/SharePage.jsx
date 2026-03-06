@@ -1,6 +1,8 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { useParams, Link } from 'react-router-dom'
-import { Helmet } from 'react-helmet-async'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
+import { SafeHelmet } from '@/components/SafeHelmet'
 import {
   MapPin,
   Bed,
@@ -17,15 +19,26 @@ import NeighborhoodData from '../components/NeighborhoodData'
 import ProtectedImageContainer from '../components/ProtectedImageContainer'
 import { formatPrice } from '../lib/priceFormat'
 
-export default function SharePage() {
-  const { id: token } = useParams()
-  const [property, setProperty] = useState(null)
-  const [loading, setLoading] = useState(true)
+export default function SharePage({ initialShareData = null } = {}) {
+  const params = useParams()
+  const token = params?.id ?? null
+  const [property, setProperty] = useState(initialShareData?.property ?? null)
+  const [loading, setLoading] = useState(!initialShareData)
   const [copied, setCopied] = useState(false)
-  const [expired, setExpired] = useState(false)
+  const [expired, setExpired] = useState(initialShareData?.expired ?? false)
   const [galleryIndex, setGalleryIndex] = useState(0)
 
   useEffect(() => {
+    if (!token) {
+      setLoading(false)
+      return
+    }
+    if (initialShareData !== null) {
+      setProperty(initialShareData?.property ?? null)
+      setExpired(initialShareData?.expired ?? false)
+      setLoading(false)
+      return
+    }
     let cancelled = false
     async function loadSharedProperty() {
       try {
@@ -53,7 +66,7 @@ export default function SharePage() {
 
     loadSharedProperty()
     return () => { cancelled = true }
-  }, [token])
+  }, [token, initialShareData])
 
   if (loading) {
     return (
@@ -68,7 +81,7 @@ export default function SharePage() {
       <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="text-center">
           <p className="text-slate-600 mb-4">{expired ? 'ลิงก์นี้หมดอายุแล้ว กรุณาให้เอเจนต์แชร์ลิงก์ใหม่' : 'ไม่พบรายการนี้'}</p>
-          <Link to="/" className="text-blue-900 font-medium hover:underline">กลับหน้าแรก</Link>
+          <Link href="/" className="text-blue-900 font-medium hover:underline">กลับหน้าแรก</Link>
         </div>
       </div>
     )
@@ -140,7 +153,7 @@ export default function SharePage() {
 
   return (
     <>
-      <Helmet>
+      <SafeHelmet>
         <title>{pageTitle}</title>
         <meta name="description" content={shareDescription} />
         {/* Open Graph meta สำหรับแชร์ไป LINE / Social */}
@@ -154,7 +167,7 @@ export default function SharePage() {
         <meta name="twitter:title" content={pageTitle} />
         <meta name="twitter:description" content={shareDescription} />
         <meta name="twitter:image" content={primaryImage} />
-      </Helmet>
+      </SafeHelmet>
       <div
         className="share-page protected-content min-h-screen bg-white flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 relative overflow-hidden"
         onContextMenu={handleContextMenu}

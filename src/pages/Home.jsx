@@ -1,16 +1,18 @@
+'use client'
 import { useState, useEffect, useMemo, useRef } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
+import Image from 'next/image'
 import {
   CheckCircle2, Building2, Lightbulb, Handshake, TrendingUp,
   MapPin, MapPinned, Phone, MessageCircle, Users, Star, Award, Clock,
   Home as HomeIcon, Wallet, BadgeCheck, Zap, Trophy, CalendarDays, Play,
 } from 'lucide-react'
-import { Helmet } from 'react-helmet-async'
+import { SafeHelmet } from '@/components/SafeHelmet'
 import PageLayout from '../components/PageLayout'
 import HomeSearch from '../components/HomeSearch'
 import DynamicPropertySection from '../components/DynamicPropertySection'
 import { getPropertiesOnce, getPopularLocationsOnce, getHomepageSectionsOnce, filterPropertiesByCriteria, getFeaturedBlogs } from '../lib/firestore'
-import { getCloudinaryThumbUrl } from '../lib/cloudinary'
+import { cloudinaryLoader, isCloudinaryUrl } from '../lib/cloudinary'
 import { useInView } from '../hooks/useInView'
 
 /** การ์ดทำเลยอดฮิต - placeholder น้ำเงินเป็นพื้นหลังเสมอ รูปทับด้านบนเมื่อโหลดได้ */
@@ -48,7 +50,7 @@ function PopularLocationCard({ loc, buildLocationPath, highPriority = false }) {
 
   return (
     <Link
-      to={buildLocationPath(loc)}
+      href={buildLocationPath(loc)}
       className="group relative aspect-video rounded-2xl overflow-hidden shadow-sm hover:-translate-y-1 hover:shadow-md transition-all duration-300 block"
     >
       {/* พื้นหลัง placeholder น้ำเงิน - แสดงเสมอเมื่อรูปยังไม่โหลดหรือโหลดไม่ได้ */}
@@ -56,11 +58,27 @@ function PopularLocationCard({ loc, buildLocationPath, highPriority = false }) {
         <MapPinned className="h-16 w-16 text-white/40" />
       </div>
       {/* รูปทับด้านบน - z-[1] เมื่อโหลดสำเร็จจะปิด placeholder */}
-      {showImage && (
+      {showImage && isCloudinaryUrl(imageUrl) ? (
+        <div className="absolute inset-0 z-[1] overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
+          <Image
+            key={imageUrl}
+            src={imageUrl}
+            loader={cloudinaryLoader}
+            alt={displayName}
+            width={400}
+            height={225}
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none"
+            priority={highPriority}
+            draggable={false}
+            onError={() => setFailedImageUrl(imageUrl)}
+          />
+        </div>
+      ) : showImage ? (
         <div className="absolute inset-0 z-[1] overflow-hidden" onContextMenu={(e) => e.preventDefault()}>
           <img
             key={imageUrl}
-            src={getCloudinaryThumbUrl(imageUrl)}
+            src={imageUrl}
             alt={displayName}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 select-none"
             loading={highPriority ? 'eager' : 'lazy'}
@@ -69,7 +87,7 @@ function PopularLocationCard({ loc, buildLocationPath, highPriority = false }) {
             onError={() => setFailedImageUrl(imageUrl)}
           />
         </div>
-      )}
+      ) : null}
       <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent z-10" />
       <span className="absolute bottom-4 left-4 right-4 text-white text-xl font-bold drop-shadow-lg z-20">
         {displayName}
@@ -110,17 +128,17 @@ const ANIMATE_VISIBLE = 'opacity-100 translate-y-0'
 const ANIMATE_HIDDEN = 'opacity-0 translate-y-6'
 const ANIMATE_TRANSITION = 'transition-all duration-600 ease-out'
 
-export default function Home() {
-  const [properties, setProperties] = useState([])
-  const [popularLocations, setPopularLocations] = useState([])
-  const [homepageSections, setHomepageSections] = useState([])
-  const [featuredBlogs, setFeaturedBlogs] = useState([])
+export default function Home({ initialData = null }) {
+  const [properties, setProperties] = useState(initialData?.properties ?? [])
+  const [popularLocations, setPopularLocations] = useState(initialData?.popularLocations ?? [])
+  const [homepageSections, setHomepageSections] = useState(initialData?.homepageSections ?? [])
+  const [featuredBlogs, setFeaturedBlogs] = useState(initialData?.featuredBlogs ?? [])
   const [blogsLoading, setBlogsLoading] = useState(false)
   const [sectionsLoading, setSectionsLoading] = useState(false)
   const [locationsLoading, setLocationsLoading] = useState(false)
-  const [showBlogs, setShowBlogs] = useState(false)
-  const [showSections, setShowSections] = useState(false)
-  const [showLocations, setShowLocations] = useState(false)
+  const [showBlogs, setShowBlogs] = useState(!!(initialData?.featuredBlogs?.length))
+  const [showSections, setShowSections] = useState(!!(initialData?.homepageSections?.length))
+  const [showLocations, setShowLocations] = useState(!!(initialData?.popularLocations?.length))
 
   const [refBlogs, inViewBlogs] = useInView({ rootMargin: '80px', threshold: 0.05 })
   const [refSections, inViewSections] = useInView({ rootMargin: '80px', threshold: 0.05 })
@@ -130,9 +148,9 @@ export default function Home() {
   const fetchedSectionsRef = useRef(false)
   const fetchedLocationsRef = useRef(false)
 
-  // โหลด Featured Blogs เมื่อ section เข้าหน้าจอ
+  // โหลด Featured Blogs เมื่อ section เข้าหน้าจอ (ข้ามถ้ามี initialData แล้ว)
   useEffect(() => {
-    if (!inViewBlogs || fetchedBlogsRef.current) return
+    if (initialData?.featuredBlogs?.length || !inViewBlogs || fetchedBlogsRef.current) return
     fetchedBlogsRef.current = true
     setBlogsLoading(true)
     getFeaturedBlogs()
@@ -142,11 +160,12 @@ export default function Home() {
       })
       .catch((e) => console.error('Error loading featured blogs:', e))
       .finally(() => setBlogsLoading(false))
-  }, [inViewBlogs])
+  }, [inViewBlogs, initialData?.featuredBlogs?.length])
 
-  // โหลด Dynamic sections (properties + homepage sections) เมื่อ section เข้าหน้าจอ
+  // โหลด Dynamic sections (properties + homepage sections) เมื่อ section เข้าหน้าจอ (ข้ามถ้ามี initialData แล้ว)
   useEffect(() => {
-    if (!inViewSections || fetchedSectionsRef.current) return
+    const hasServerSections = initialData?.homepageSections?.length && initialData?.properties?.length
+    if (hasServerSections || !inViewSections || fetchedSectionsRef.current) return
     fetchedSectionsRef.current = true
     setSectionsLoading(true)
     Promise.all([getPropertiesOnce(false), getHomepageSectionsOnce()])
@@ -157,11 +176,11 @@ export default function Home() {
       })
       .catch((e) => console.error('Error loading sections:', e))
       .finally(() => setSectionsLoading(false))
-  }, [inViewSections])
+  }, [inViewSections, initialData?.homepageSections?.length, initialData?.properties?.length])
 
-  // โหลด Popular Locations เมื่อ section เข้าหน้าจอ
+  // โหลด Popular Locations เมื่อ section เข้าหน้าจอ (ข้ามถ้ามี initialData แล้ว)
   useEffect(() => {
-    if (!inViewLocations || fetchedLocationsRef.current) return
+    if (initialData?.popularLocations?.length || !inViewLocations || fetchedLocationsRef.current) return
     fetchedLocationsRef.current = true
     setLocationsLoading(true)
     getPopularLocationsOnce()
@@ -172,7 +191,7 @@ export default function Home() {
       })
       .catch((e) => console.error('Error loading popular locations:', e))
       .finally(() => setLocationsLoading(false))
-  }, [inViewLocations])
+  }, [inViewLocations, initialData?.popularLocations?.length])
 
   // Resolve properties for each section (จำกัดสูงสุด 5 รายการต่อ section)
   const sectionPropertiesMap = useMemo(() => {
@@ -225,7 +244,7 @@ export default function Home() {
 
   return (
     <>
-      <Helmet>
+      <SafeHelmet>
         <title>SPS Property Solution | บ้านคอนโดสวย อมตะซิตี้ ชลบุรี</title>
         <meta name="description" content="SPS Property Solution บ้านคอนโดสวย อมตะซิตี้ ชลบุรี - ค้นหาบ้านและคอนโดที่ใช่สำหรับคุณในอมตะซิตี้ ชลบุรี" />
         <link rel="canonical" href="https://spspropertysolution.com/" />
@@ -265,7 +284,7 @@ export default function Home() {
             }
           })}
         </script>
-      </Helmet>
+      </SafeHelmet>
       <PageLayout
         heroTitle={
           <span className="inline-block leading-tight">
@@ -353,7 +372,7 @@ export default function Home() {
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">บทความน่าสนใจ</h2>
                 <Link
-                  to="/blogs"
+                  href="/blogs"
                   className="text-blue-900 font-medium hover:underline flex items-center gap-1"
                 >
                   ดูทั้งหมด
@@ -369,19 +388,32 @@ export default function Home() {
                   return (
                     <Link
                       key={blog.id}
-                      to={`/blogs/${blog.id}`}
+                      href={`/blogs/${blog.id}`}
                       className="group bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
                     >
                       <div className="relative aspect-video bg-slate-100 overflow-hidden">
                         {thumbnail ? (
                           <>
-                            <img
-                              src={getCloudinaryThumbUrl(thumbnail)}
-                              alt={blog.title}
-                              loading="lazy"
-                              decoding="async"
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                            />
+                            {isCloudinaryUrl(thumbnail) ? (
+                              <Image
+                                src={thumbnail}
+                                loader={cloudinaryLoader}
+                                alt={blog.title}
+                                width={400}
+                                height={225}
+                                sizes="(max-width: 768px) 100vw, 33vw"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <img
+                                src={thumbnail}
+                                alt={blog.title}
+                                loading="lazy"
+                                decoding="async"
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              />
+                            )}
                             {hasVideo && (
                               <div className="absolute inset-0 flex items-center justify-center bg-black/30">
                                 <div className="bg-white/90 rounded-full p-3 shadow-lg group-hover:scale-110 transition-transform duration-300">
@@ -593,7 +625,7 @@ export default function Home() {
                   </div>
                 </div>
                 <Link
-                  to="/properties"
+                  href="/properties"
                   className="inline-flex items-center gap-1 text-sm font-semibold text-blue-900 border border-blue-200 bg-blue-50 hover:bg-blue-900 hover:text-white px-4 py-1.5 rounded-full transition-all duration-200 shrink-0"
                 >
                   ดูทั้งหมด →

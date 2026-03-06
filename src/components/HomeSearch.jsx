@@ -1,5 +1,6 @@
+'use client'
 import { useState, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 import { Search, Home, Building2, KeyRound, Flame } from 'lucide-react'
 
 // Quick Filter Chips Configuration
@@ -31,7 +32,7 @@ const quickFilters = [
 ]
 
 export default function HomeSearch() {
-  const navigate = useNavigate()
+  const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
   const [activeChipId, setActiveChipId] = useState(null)
   const inputRef = useRef(null)
@@ -41,7 +42,7 @@ export default function HomeSearch() {
     
     const params = new URLSearchParams()
     params.set('search', searchQuery.trim())
-    navigate(`/properties?${params.toString()}`)
+    router.push(`/properties?${params.toString()}`)
   }
 
   const handleKeyDown = (e) => {

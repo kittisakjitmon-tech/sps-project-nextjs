@@ -21,11 +21,18 @@ import { db, storage } from './firebase'
 
 export { db, writeBatch }
 
+/** No-op unsubscribe for snapshot functions when Firestore is not available */
+const noopUnsub = () => {}
+
+function guardDb() {
+  return !!db
+}
+
 const PROPERTIES = 'properties'
 const LEADS = 'leads'
 const SHARE_LINKS = 'share_links'
-const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME
-const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET
+const CLOUDINARY_CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+const CLOUDINARY_UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET
 const CLOUDINARY_ENHANCE_TRANSFORM = 'e_improve:outdoor,a_auto,q_auto,f_auto'
 
 function getCloudinaryUploadEndpoint() {
@@ -100,8 +107,9 @@ function generateShareToken(length = 20) {
   return token
 }
 
-/** Properties - real-time list. Sorts by createdAt if present. */
+/** Properties - real-time list. Sorts by createdAt if present. When db is null, does not call callback (keeps server initial data). */
 export function getPropertiesSnapshot(callback) {
+  if (!guardDb()) return noopUnsub
   const q = collection(db, PROPERTIES)
   return onSnapshot(q, (snap) => {
     const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -116,6 +124,7 @@ export function getPropertiesSnapshot(callback) {
 
 /** Properties - one-time fetch for public pages (optional: only available) */
 export async function getPropertiesOnce(availableOnly = false) {
+  if (!guardDb()) return []
   const snap = await getDocs(collection(db, PROPERTIES))
   let list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
   list.sort((a, b) => {
@@ -128,6 +137,7 @@ export async function getPropertiesOnce(availableOnly = false) {
 }
 
 export async function getPropertyByIdOnce(id) {
+  if (!guardDb()) return null
   const d = await getDoc(doc(db, PROPERTIES, id))
   if (!d.exists()) return null
   return { id: d.id, ...d.data() }
@@ -141,6 +151,7 @@ export async function createOrReuseShareLink({ propertyId, createdBy, ttlHours =
   if (!propertyId || !createdBy) {
     throw new Error('propertyId and createdBy are required')
   }
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
 
   const nowMs = Date.now()
   const q = query(
@@ -171,6 +182,7 @@ export async function createOrReuseShareLink({ propertyId, createdBy, ttlHours =
 
 export async function getShareLinkByToken(token) {
   if (!token) return null
+  if (!guardDb()) return null
   const snap = await getDoc(doc(db, SHARE_LINKS, token))
   if (!snap.exists()) return null
   return { id: snap.id, ...snap.data() }
@@ -183,6 +195,7 @@ export function isShareLinkExpired(shareLink) {
 }
 
 export async function createProperty(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   const payload = {
     ...data,
     status: data.status ?? 'available',
@@ -194,6 +207,7 @@ export async function createProperty(data) {
 }
 
 export async function updatePropertyById(id, data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, PROPERTIES, id), {
     ...data,
     updatedAt: serverTimestamp(),
@@ -206,6 +220,7 @@ export async function updatePropertyById(id, data) {
  */
 export async function addTagToProperty(propertyId, tag) {
   if (!propertyId || !tag || typeof tag !== 'string' || !tag.trim()) return
+  if (!guardDb()) return
   const tagVal = tag.trim()
   const snap = await getDoc(doc(db, PROPERTIES, propertyId))
   if (!snap.exists()) return
@@ -226,6 +241,7 @@ export async function addTagToProperty(propertyId, tag) {
  */
 export async function removeTagFromProperty(propertyId, tag) {
   if (!propertyId || !tag || typeof tag !== 'string' || !tag.trim()) return
+  if (!guardDb()) return
   const tagVal = tag.trim()
   const snap = await getDoc(doc(db, PROPERTIES, propertyId))
   if (!snap.exists()) return
@@ -241,6 +257,7 @@ export async function removeTagFromProperty(propertyId, tag) {
 }
 
 export async function deletePropertyById(id) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await deleteDoc(doc(db, PROPERTIES, id))
 }
 
@@ -263,6 +280,10 @@ export function uploadPropertyImageWithProgress(file, propertyId, onProgress) {
 
 /** Leads */
 export function getLeadsSnapshot(callback) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = collection(db, LEADS)
   return onSnapshot(q, (snap) => {
     const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -276,6 +297,7 @@ export function getLeadsSnapshot(callback) {
 }
 
 export async function createLead(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await addDoc(collection(db, LEADS), {
     ...data,
     read: false,
@@ -285,6 +307,7 @@ export async function createLead(data) {
 }
 
 export async function updateLeadById(id, data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, LEADS, id), data)
 }
 
@@ -312,6 +335,7 @@ export function getViewingRequestsSnapshot(callback) {
 }
 
 export async function createViewingRequest(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await addDoc(collection(db, VIEWING_REQUESTS), {
     ...data,
     status: 'pending',
@@ -331,6 +355,10 @@ export async function createAppointment(data) {
 }
 
 export function getAppointmentsSnapshot(callback) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   return onSnapshot(collection(db, APPOINTMENTS), (snap) => {
     const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
     callback(list)
@@ -338,6 +366,7 @@ export function getAppointmentsSnapshot(callback) {
 }
 
 export async function updateAppointmentStatus(id, status) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, APPOINTMENTS, id), {
     status,
     updatedAt: serverTimestamp(),
@@ -348,6 +377,7 @@ export async function updateAppointmentStatus(id, status) {
 const INQUIRIES = 'inquiries'
 
 export async function createInquiry(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await addDoc(collection(db, INQUIRIES), {
     ...data,
     status: 'pending',
@@ -359,6 +389,7 @@ export async function createInquiry(data) {
 const LOAN_REQUESTS = 'loan_requests'
 
 export async function createLoanRequest(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await addDoc(collection(db, LOAN_REQUESTS), {
     ...data,
     status: 'pending',
@@ -367,6 +398,10 @@ export async function createLoanRequest(data) {
 }
 
 export function getLoanRequestsSnapshot(callback) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = query(
     collection(db, LOAN_REQUESTS),
     orderBy('createdAt', 'desc')
@@ -391,6 +426,7 @@ export async function updateLoanRequestStatus(id, status, approvedAmount) {
 }
 
 export async function deleteLoanRequest(id) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await deleteDoc(doc(db, LOAN_REQUESTS, id))
 }
 
@@ -398,6 +434,10 @@ export async function deleteLoanRequest(id) {
 const HERO_SLIDES = 'hero_slides'
 
 export function getHeroSlidesSnapshot(callback) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = collection(db, HERO_SLIDES)
   return onSnapshot(q, (snap) => {
     const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -407,6 +447,7 @@ export function getHeroSlidesSnapshot(callback) {
 }
 
 export async function getHeroSlidesOnce() {
+  if (!guardDb()) return []
   const snap = await getDocs(collection(db, HERO_SLIDES))
   const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
   list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -414,6 +455,7 @@ export async function getHeroSlidesOnce() {
 }
 
 export async function createHeroSlide(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await addDoc(collection(db, HERO_SLIDES), {
     ...data,
     createdAt: serverTimestamp(),
@@ -422,6 +464,7 @@ export async function createHeroSlide(data) {
 }
 
 export async function updateHeroSlideById(id, data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, HERO_SLIDES, id), {
     ...data,
     updatedAt: serverTimestamp(),
@@ -429,6 +472,7 @@ export async function updateHeroSlideById(id, data) {
 }
 
 export async function deleteHeroSlideById(id, imageUrl) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   // ลบไฟล์จาก Storage ถ้ามี imageUrl
   if (imageUrl) {
     try {
@@ -459,6 +503,7 @@ export async function uploadHeroSlideImage(file) {
 
 /** Batch update order ของ hero slides */
 export async function batchUpdateHeroSlideOrders(updates) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   // updates = [{ id: '...', order: 0 }, { id: '...', order: 1 }, ...]
   const batch = writeBatch(db)
   updates.forEach(({ id, order }) => {
@@ -472,6 +517,7 @@ export async function batchUpdateHeroSlideOrders(updates) {
 const PENDING_PROPERTIES = 'pending_properties'
 
 export async function createPendingProperty(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await addDoc(collection(db, PENDING_PROPERTIES), {
     ...data,
     status: 'pending',
@@ -496,12 +542,14 @@ export function getPendingPropertiesSnapshot(callback) {
 }
 
 export async function getPendingPropertyByIdOnce(id) {
+  if (!guardDb()) return null
   const d = await getDoc(doc(db, PENDING_PROPERTIES, id))
   if (!d.exists()) return null
   return { id: d.id, ...d.data() }
 }
 
 export async function approvePendingProperty(pendingId) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   // ดึงข้อมูล pending property
   const pending = await getPendingPropertyByIdOnce(pendingId)
   if (!pending) throw new Error('ไม่พบข้อมูลประกาศ')
@@ -529,6 +577,7 @@ export async function approvePendingProperty(pendingId) {
 }
 
 export async function rejectPendingProperty(id, rejectionReason = '') {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   // ดึงข้อมูล pending property
   const pending = await getPendingPropertyByIdOnce(id)
   if (!pending) throw new Error('ไม่พบข้อมูลประกาศ')
@@ -557,6 +606,10 @@ export async function uploadPendingPropertyImage(file, pendingId) {
 const POPULAR_LOCATIONS = 'popular_locations'
 
 export function getPopularLocationsSnapshot(callback) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = collection(db, POPULAR_LOCATIONS)
   return onSnapshot(q, (snap) => {
     const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -574,6 +627,7 @@ export function getPopularLocationsSnapshot(callback) {
 }
 
 export async function getPopularLocationsOnce() {
+  if (!guardDb()) return []
   const snap = await getDocs(collection(db, POPULAR_LOCATIONS))
   const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
   list.sort((a, b) => {
@@ -603,6 +657,7 @@ export async function createPopularLocation(data) {
 }
 
 export async function updatePopularLocationById(id, data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, POPULAR_LOCATIONS, id), {
     ...data,
     updatedAt: serverTimestamp(),
@@ -610,6 +665,7 @@ export async function updatePopularLocationById(id, data) {
 }
 
 export async function deletePopularLocationById(id, imageUrl) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   // ลบไฟล์จาก Storage ถ้ามี imageUrl
   if (imageUrl) {
     try {
@@ -636,6 +692,7 @@ export async function uploadPopularLocationImage(file) {
 
 /** Batch update order ของ popular locations */
 export async function batchUpdatePopularLocationOrders(updates) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   const batch = writeBatch(db)
   updates.forEach(({ id, order }) => {
     const locationRef = doc(db, POPULAR_LOCATIONS, id)
@@ -649,6 +706,10 @@ export function getUserPropertiesSnapshot(userId, callback) {
   if (!userId) {
     callback([])
     return () => { }
+  }
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
   }
   const q = query(collection(db, PROPERTIES), where('createdBy', '==', userId))
   return onSnapshot(q, (snap) => {
@@ -668,6 +729,10 @@ const ACTIVITIES = 'activities'
 
 /** Activities - Realtime snapshot สำหรับบันทึกกิจกรรม */
 export function getActivitiesSnapshot(callback, limitCount = 20) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = query(
     collection(db, ACTIVITIES),
     orderBy('timestamp', 'desc'),
@@ -692,6 +757,7 @@ const VIEWS_DAYS_LIMIT = 365
 
 export async function recordPropertyView({ propertyId, type }) {
   if (!propertyId) return
+  if (!guardDb()) return
   const now = new Date()
   const date = now.toISOString().slice(0, 10)
   await addDoc(collection(db, PROPERTY_VIEWS), {
@@ -704,6 +770,10 @@ export async function recordPropertyView({ propertyId, type }) {
 
 /** ดึง property_views ย้อนหลัง VIEWS_DAYS_LIMIT วัน สำหรับ Dashboard (realtime) */
 export function getPropertyViewsSnapshot(callback) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = query(
     collection(db, PROPERTY_VIEWS),
     orderBy('timestamp', 'desc'),
@@ -722,6 +792,7 @@ export function getPropertyViewsSnapshot(callback) {
 }
 
 export async function createAuditLog(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await addDoc(collection(db, AUDIT_LOGS), {
     ...data,
     timestamp: serverTimestamp(),
@@ -729,6 +800,10 @@ export async function createAuditLog(data) {
 }
 
 export function getAuditLogsSnapshot(callback, limit = 100) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = collection(db, AUDIT_LOGS)
   return onSnapshot(q, (snap) => {
     const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
@@ -746,6 +821,19 @@ const SYSTEM_SETTINGS = 'system_settings'
 const SETTINGS_DOC_ID = 'main'
 
 export async function getSystemSettings() {
+  if (!guardDb()) {
+    return {
+      siteName: 'SPS Property Solution',
+      siteDescription: 'ระบบค้นหาและจัดการอสังหาริมทรัพย์',
+      contactEmail: '',
+      contactPhone: '',
+      maintenanceMode: false,
+      allowPublicRegistration: true,
+      maxPropertiesPerUser: 10,
+      autoApproveProperties: false,
+      updatedAt: null,
+    }
+  }
   const settingsDoc = await getDoc(doc(db, SYSTEM_SETTINGS, SETTINGS_DOC_ID))
   if (!settingsDoc.exists()) {
     // Return default settings if not exists
@@ -765,6 +853,7 @@ export async function getSystemSettings() {
 }
 
 export async function updateSystemSettings(settings) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await setDoc(
     doc(db, SYSTEM_SETTINGS, SETTINGS_DOC_ID),
     {
@@ -776,6 +865,19 @@ export async function updateSystemSettings(settings) {
 }
 
 export function getSystemSettingsSnapshot(callback) {
+  if (!guardDb()) {
+    callback({
+      siteName: 'SPS Property Solution',
+      siteDescription: 'ระบบค้นหาและจัดการอสังหาริมทรัพย์',
+      contactEmail: '',
+      contactPhone: '',
+      maintenanceMode: false,
+      allowPublicRegistration: true,
+      maxPropertiesPerUser: 10,
+      autoApproveProperties: false,
+    })
+    return noopUnsub
+  }
   return onSnapshot(doc(db, SYSTEM_SETTINGS, SETTINGS_DOC_ID), (docSnap) => {
     if (docSnap.exists()) {
       callback({ id: docSnap.id, ...docSnap.data() })
@@ -808,6 +910,7 @@ export function getHomepageSectionsSnapshot(callback) {
 }
 
 export async function getHomepageSectionsOnce() {
+  if (!guardDb()) return []
   const snap = await getDocs(collection(db, HOMEPAGE_SECTIONS))
   const list = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
   list.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
@@ -815,6 +918,7 @@ export async function getHomepageSectionsOnce() {
 }
 
 export async function createHomepageSection(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   const payload = {
     ...data,
     propertyIds: data.propertyIds || [],
@@ -829,6 +933,7 @@ export async function createHomepageSection(data) {
 }
 
 export async function updateHomepageSectionById(id, data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await updateDoc(doc(db, HOMEPAGE_SECTIONS, id), {
     ...data,
     updatedAt: serverTimestamp(),
@@ -836,10 +941,12 @@ export async function updateHomepageSectionById(id, data) {
 }
 
 export async function deleteHomepageSectionById(id) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await deleteDoc(doc(db, HOMEPAGE_SECTIONS, id))
 }
 
 export async function batchUpdateHomepageSectionOrders(updates) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   const batch = writeBatch(db)
   updates.forEach(({ id, order }) => {
     const ref = doc(db, HOMEPAGE_SECTIONS, id)
@@ -895,6 +1002,10 @@ const BLOGS = 'blogs'
  * Get all blogs snapshot (for admin)
  */
 export function getBlogsSnapshot(callback) {
+  if (!guardDb()) {
+    callback([])
+    return noopUnsub
+  }
   const q = query(collection(db, BLOGS), orderBy('createdAt', 'desc'))
   return onSnapshot(q, (snapshot) => {
     const blogs = snapshot.docs.map((doc) => ({
@@ -912,6 +1023,7 @@ export function getBlogsSnapshot(callback) {
  * @returns {Promise<{blogs: Array, lastDoc: object|null, hasMore: boolean}>}
  */
 export async function getPublishedBlogs(pageSize = 9, lastDoc = null) {
+  if (!guardDb()) return { blogs: [], lastDoc: null, hasMore: false }
   let q = query(
     collection(db, BLOGS),
     where('published', '==', true),
@@ -949,6 +1061,7 @@ export async function getPublishedBlogs(pageSize = 9, lastDoc = null) {
  * Get featured blogs (max 3)
  */
 export async function getFeaturedBlogs() {
+  if (!guardDb()) return []
   const q = query(
     collection(db, BLOGS),
     where('published', '==', true),
@@ -976,6 +1089,7 @@ export async function getBlogByIdOnce(id) {
  * Create a new blog
  */
 export async function createBlog(data) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   const payload = {
     title: data.title || '',
     content: data.content || '',
@@ -1004,6 +1118,7 @@ export async function updateBlogById(id, data) {
  * Delete blog by ID
  */
 export async function deleteBlogById(id) {
+  if (!guardDb()) throw new Error('Firebase Firestore is not available')
   await deleteDoc(doc(db, BLOGS, id))
 }
 

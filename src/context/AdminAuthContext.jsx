@@ -11,8 +11,12 @@ export function AdminAuthProvider({ children }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (!adminAuth) {
+      setLoading(false)
+      return
+    }
     const unsub = onAuthStateChanged(adminAuth, async (u) => {
-      if (u) {
+      if (u && adminDb) {
         // ดึง role จาก Firestore users collection
         try {
           const userDoc = await getDoc(doc(adminDb, 'users', u.uid))
@@ -51,6 +55,7 @@ export function AdminAuthProvider({ children }) {
   }, [])
 
   const login = async (email, password) => {
+    if (!adminAuth) throw new Error('Firebase Auth is not available')
     const cred = await signInWithEmailAndPassword(adminAuth, email, password)
     // เซ็ต user ทันทีหลัง sign-in เพื่อไม่ให้ navigate ไป /sps-internal-admin แล้วถูก redirect กลับ login (รอ onAuthStateChanged ช้าเกินไป)
     setUser(cred.user)
@@ -59,7 +64,7 @@ export function AdminAuthProvider({ children }) {
   }
 
   const logout = async () => {
-    await signOut(adminAuth)
+    if (adminAuth) await signOut(adminAuth)
     setUserRole(null)
   }
 

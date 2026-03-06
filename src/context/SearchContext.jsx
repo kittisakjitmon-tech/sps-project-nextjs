@@ -44,8 +44,26 @@ export function SearchProvider({ children }) {
   )
 }
 
+const defaultSearchState = {
+  filters: {
+    location: '',
+    propertyType: '',
+    priceMin: '',
+    priceMax: '',
+    bedrooms: '',
+    bathrooms: '',
+    areaMin: '',
+    areaMax: '',
+    propertySubStatus: '',
+    isRental: null,
+    tag: '',
+  },
+  updateFilters: () => {},
+  clearFilters: () => {},
+}
+
 export function useSearch() {
   const ctx = useContext(SearchContext)
-  if (!ctx) throw new Error('useSearch must be used within SearchProvider')
+  if (!ctx) return defaultSearchState
   return ctx
 }

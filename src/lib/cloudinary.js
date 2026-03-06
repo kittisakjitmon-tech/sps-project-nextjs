@@ -3,7 +3,7 @@
  * ใช้กับรูปที่อัปโหลดผ่าน Cloudinary (res.cloudinary.com)
  */
 
-const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || ''
+const CLOUD_NAME = (typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME) || ''
 const CDN_BASE = CLOUD_NAME ? `https://res.cloudinary.com/${CLOUD_NAME}/image/upload` : ''
 
 /**
@@ -86,4 +86,16 @@ export function getCloudinaryMediumUrl(url) {
  */
 export function getCloudinaryLargeUrl(url) {
   return getCloudinaryImageUrl(url, { width: 1200, crop: 'fill' })
+}
+
+/**
+ * Loader for next/image — builds Cloudinary URL with width/quality for srcset.
+ * Usage: <Image src={cloudinaryUrl} loader={cloudinaryLoader} width={400} height={300} sizes="..." />
+ */
+export function cloudinaryLoader({ src, width, quality }) {
+  return getCloudinaryImageUrl(src, {
+    width,
+    quality: quality ?? 'auto',
+    crop: 'fill',
+  })
 }

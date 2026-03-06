@@ -1,38 +1,48 @@
-import { initializeApp } from 'firebase/app'
-import { getFirestore } from 'firebase/firestore'
-import { getStorage } from 'firebase/storage'
-import { getAuth } from 'firebase/auth'
+import { initializeApp, getApps, getApp } from "firebase/app"
+import { getFirestore } from "firebase/firestore"
+import { getStorage } from "firebase/storage"
+import { getAuth } from "firebase/auth"
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
-  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 }
 
-// Separate Firebase apps for public and admin.
-// Each side must use its own app so Auth session does not collide.
-export const publicApp = initializeApp(firebaseConfig, 'publicApp')
-export const publicAuth = getAuth(publicApp)
-export const publicDb = getFirestore(publicApp)
-export const publicStorage = getStorage(publicApp)
+function createApp(name) {
+  const existing = getApps().find(app => app.name === name)
+  if (existing) return existing
+  return initializeApp(firebaseConfig, name)
+}
 
-export const adminApp = initializeApp(firebaseConfig, 'adminApp')
-export const adminAuth = getAuth(adminApp)
-export const adminDb = getFirestore(adminApp)
-export const adminStorage = getStorage(adminApp)
+const isBrowser = typeof window !== "undefined"
+
+let publicApp = null
+let adminApp = null
+
+if (firebaseConfig.apiKey && firebaseConfig.projectId) {
+  publicApp = createApp("publicApp")
+  adminApp = createApp("adminApp")
+}
+
+export const publicAuth = publicApp ? getAuth(publicApp) : null
+export const publicDb = publicApp ? getFirestore(publicApp) : null
+export const publicStorage = publicApp ? getStorage(publicApp) : null
+
+export const adminAuth = adminApp ? getAuth(adminApp) : null
+export const adminDb = adminApp ? getFirestore(adminApp) : null
+export const adminStorage = adminApp ? getStorage(adminApp) : null
 
 function isAdminPath() {
-  if (typeof window === 'undefined') return false
-  return window.location.pathname.startsWith('/sps-internal-admin')
+  if (!isBrowser) return false
+  return window.location.pathname.startsWith("/sps-internal-admin")
 }
 
-// Keep legacy exports for existing imports.
-// They now resolve to the correct app based on current route.
-export const db = isAdminPath() ? adminDb : publicDb
-export const storage = isAdminPath() ? adminStorage : publicStorage
-
+export const db = isBrowser && isAdminPath() ? adminDb : publicDb
+export const storage = isBrowser && isAdminPath() ? adminStorage : publicStorage
 export const auth = publicAuth
+
 export default publicApp

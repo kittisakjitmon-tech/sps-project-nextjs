@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+'use client'
+import Link from 'next/link'
 import {
   Building2,
   Users,
@@ -56,7 +57,7 @@ function StatCard({ title, value, icon: Icon, iconBg, href }) {
 
   if (href) {
     return (
-      <Link to={href} className={`block ${cardClass}`}>
+      <Link href={href} className={`block ${cardClass}`}>
         {content}
       </Link>
     )
@@ -168,6 +169,10 @@ export default function Dashboard() {
 
   const handleMigration = async () => {
     if (!window.confirm('คุณต้องการรันสคริปต์ปรับปรุงระบบ ID (PropertyTypes & DisplayId) หรือไม่?')) return
+    if (!db) {
+      alert('Firebase Firestore is not available')
+      return
+    }
     setMigrating(true)
     try {
       const allProps = await getPropertiesOnce()
@@ -266,6 +271,10 @@ export default function Dashboard() {
 
   const handleRegenerateTags = async () => {
     if (!window.confirm('คุณต้องการรีเซ็ต Custom Tags ทั้งหมดหรือไม่?\n⚠️ Tags ที่เคยใส่เองจะถูกลบและสร้างใหม่จากข้อมูลจริงของ property')) return
+    if (!db) {
+      alert('Firebase Firestore is not available')
+      return
+    }
     setTagsRegenerating(true)
     try {
       const allProps = await getPropertiesOnce()
@@ -342,7 +351,7 @@ export default function Dashboard() {
             <span className="text-sm text-emerald-600 font-medium">✓ Tags อัปเดตแล้ว</span>
           )}
           <Link
-            to="/sps-internal-admin/properties/new"
+            href="/sps-internal-admin/properties/new"
             className="inline-flex items-center gap-2 px-3 sm:px-5 py-2 rounded-xl bg-yellow-400 text-yellow-900 text-sm font-semibold hover:bg-yellow-500 transition-colors shadow-sm"
           >
             <Plus className="h-4 w-4" />
@@ -383,7 +392,7 @@ export default function Dashboard() {
       {/* Pending Properties Alert */}
       {pendingCount > 0 && (
         <Link
-          to="/sps-internal-admin/pending-properties"
+          href="/sps-internal-admin/pending-properties"
           className="flex items-center justify-between px-6 py-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 hover:bg-amber-100 transition-colors"
         >
           <div className="flex items-center gap-3">
@@ -471,7 +480,7 @@ export default function Dashboard() {
                         <td className="py-2 pr-2 font-medium text-slate-500">{i + 1}</td>
                         <td className="py-2 pr-2">
                           <Link
-                            to={`/sps-internal-admin/properties/${row.propertyId}`}
+                            href={`/sps-internal-admin/properties/edit/${row.propertyId}`}
                             className="font-medium text-blue-700 hover:underline truncate block max-w-[200px]"
                             title={row.title}
                           >
@@ -557,7 +566,7 @@ export default function Dashboard() {
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="text-base sm:text-lg font-bold text-blue-900 truncate">ลูกค้าล่าสุด</h2>
             <Link
-              to="/sps-internal-admin/leads"
+              href="/sps-internal-admin/leads"
               className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
             >
               ดูทั้งหมด
@@ -621,7 +630,7 @@ export default function Dashboard() {
               <h2 className="text-lg font-bold text-blue-900">Activity Feed</h2>
             </div>
             <Link
-              to="/sps-internal-admin/activities"
+              href="/sps-internal-admin/activities"
               className="text-sm font-medium text-blue-600 hover:text-blue-800 flex items-center gap-1"
             >
               ดูทั้งหมด
@@ -676,14 +685,14 @@ export default function Dashboard() {
       {/* Quick Links */}
       <div className="flex flex-wrap gap-4">
         <Link
-          to="/sps-internal-admin/properties"
+          href="/sps-internal-admin/properties"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-900 text-white font-medium hover:bg-blue-800 transition-colors"
         >
           <Building2 className="h-4 w-4" />
           ดูรายการทรัพย์ทั้งหมด
         </Link>
         <Link
-          to="/sps-internal-admin/leads"
+          href="/sps-internal-admin/leads"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl border border-gray-200 text-slate-700 font-medium hover:bg-slate-50 transition-colors"
         >
           <Users className="h-4 w-4" />

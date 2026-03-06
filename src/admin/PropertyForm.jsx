@@ -1,5 +1,6 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useRouter, useParams } from 'next/navigation'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import LocationAutocomplete from '../components/LocationAutocomplete'
 import MapPicker from '../components/MapPicker'
@@ -19,7 +20,7 @@ import { fetchAndCacheNearbyPlaces } from '../services/nearbyPlacesService'
 import { compressImages } from '../lib/imageCompressor'
 import { generateAutoTags, mergeTags } from '../lib/autoTags'
 import { ImagePlus, X, ArrowLeft, RefreshCw, Plus, Star, Trash2 } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import GoogleMapsInputWithPreview from '../components/GoogleMapsInputWithPreview'
 import PropertyExporter from './components/PropertyExporter'
 import { PROPERTY_TYPES, getPropertyLabel } from '../constants/propertyTypes'
@@ -102,7 +103,7 @@ const defaultForm = {
 
 export default function PropertyForm() {
   const { id } = useParams()
-  const navigate = useNavigate()
+  const router = useRouter()
   const { user, userRole } = useAdminAuth()
   const isEdit = Boolean(id)
   const [form, setForm] = useState(defaultForm)
@@ -442,7 +443,7 @@ export default function PropertyForm() {
       } catch (e) {
         console.error('[PropertyForm] Failed to log activity:', e)
       }
-      navigate('/sps-internal-admin/properties', { replace: true })
+      router.replace('/sps-internal-admin/properties')
     } catch (err) {
       console.error(err)
       alert('ลบไม่สำเร็จ: ' + (err?.message || err))
@@ -583,7 +584,7 @@ export default function PropertyForm() {
             mapUrl: payload.mapUrl,
           }).catch(() => { })
         }
-        navigate('/sps-internal-admin/properties')
+        router.push('/sps-internal-admin/properties')
       } else {
         const newId = await createProperty({
           ...payload,
@@ -639,7 +640,7 @@ export default function PropertyForm() {
             mapUrl: payload.mapUrl,
           }).catch(() => { })
         }
-        navigate('/sps-internal-admin/properties')
+        router.push('/sps-internal-admin/properties')
       }
     } catch (err) {
       console.error(err)
@@ -671,7 +672,7 @@ export default function PropertyForm() {
       <div className="max-w-3xl">
         {/* Back Button / Breadcrumb */}
         <Link
-          to="/sps-internal-admin/properties"
+          href="/sps-internal-admin/properties"
           className="inline-flex items-center gap-2 text-slate-600 hover:text-blue-900 mb-6 transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
@@ -1206,7 +1207,7 @@ export default function PropertyForm() {
             </button>
             <button
               type="button"
-              onClick={() => navigate('/sps-internal-admin')}
+              onClick={() => router.push('/sps-internal-admin')}
               disabled={saving || deleting}
               className="px-6 py-3 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >

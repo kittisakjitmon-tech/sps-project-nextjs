@@ -1,6 +1,8 @@
+'use client'
 import { useState, useEffect, useId } from 'react'
-import { useParams, Link, useSearchParams, useNavigate } from 'react-router-dom'
-import { Helmet } from 'react-helmet-async'
+import { useParams, useSearchParams, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { SafeHelmet } from '@/components/SafeHelmet'
 import { MapPin, Bed, Bath, Maximize2, Phone, MessageCircle, Share2, CheckCircle2, Copy } from 'lucide-react'
 import NeighborhoodData from '../components/NeighborhoodData'
 import { getPropertyByIdOnce, createAppointment, createOrReuseShareLink, recordPropertyView } from '../lib/firestore'
@@ -12,7 +14,8 @@ import { highlightText, highlightTags } from '../lib/textHighlight'
 import { usePublicAuth } from '../context/PublicAuthContext'
 import { getPropertyLabel } from '../constants/propertyTypes'
 import RelatedProperties from '../components/RelatedProperties'
-import { getCloudinaryLargeUrl, getCloudinaryThumbUrl } from '../lib/cloudinary'
+import Image from 'next/image'
+import { cloudinaryLoader, getCloudinaryLargeUrl, getCloudinaryThumbUrl, isCloudinaryUrl } from '../lib/cloudinary'
 
 function MortgageCalculator({ price, directInstallment }) {
   const [loanType, setLoanType] = useState(directInstallment ? 'direct' : 'bank')
@@ -470,21 +473,31 @@ function LeadForm({ propertyId, propertyTitle, propertyPrice, isRental, onSucces
   )
 }
 
-export default function PropertyDetail() {
-  // All hooks must be called unconditionally at the top level (React Rules of Hooks)
-  const { id } = useParams()
-  const navigate = useNavigate()
+export default function PropertyDetail({ initialProperty = null } = {}) {
+  const params = useParams()
+  const id = params?.id ?? null
+  const router = useRouter()
   const [searchParams] = useSearchParams()
   const { user, isAgent } = usePublicAuth()
-  const searchQuery = searchParams.get('q') || ''
+  const searchQuery = searchParams?.get?.('q') || ''
 
-  const [property, setProperty] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [property, setProperty] = useState(() => (initialProperty?.id === id ? initialProperty : null))
+  const [loading, setLoading] = useState(!(initialProperty?.id === id))
   const [galleryIndex, setGalleryIndex] = useState(0)
   const [toastMessage, setToastMessage] = useState('')
   const [showToast, setShowToast] = useState(false)
 
   useEffect(() => {
+    if (!id) {
+      setLoading(false)
+      return
+    }
+    if (initialProperty?.id === id) {
+      setProperty(initialProperty)
+      setLoading(false)
+      recordPropertyView({ propertyId: initialProperty.id, type: initialProperty.type }).catch(() => {})
+      return
+    }
     let cancelled = false
     getPropertyByIdOnce(id).then((p) => {
       if (!cancelled) {
@@ -493,7 +506,7 @@ export default function PropertyDetail() {
       }
     }).finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [id])
+  }, [id, initialProperty])
 
   if (loading) {
     return (
@@ -508,7 +521,7 @@ export default function PropertyDetail() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <p className="text-slate-600 mb-4">ไม่พบรายการนี้</p>
-          <Link to="/" className="text-blue-900 font-medium hover:underline">กลับหน้าแรก</Link>
+          <Link href="/" className="text-blue-900 font-medium hover:underline">กลับหน้าแรก</Link>
         </div>
       </div>
     )
@@ -591,7 +604,7 @@ export default function PropertyDetail() {
       heroSubtitle={`${loc.district || ''}, ${loc.province || ''}`}
       searchComponent={null}
     >
-      <Helmet>
+      <SafeHelmet>
         <title>{title}</title>
         <meta name="description" content={description} />
         <link rel="canonical" href={`https://spspropertysolution.com/properties/${property.id}`} />
@@ -645,7 +658,7 @@ export default function PropertyDetail() {
             propertyType: getPropertyLabel(property.type) || '',
           })}
         </script>
-      </Helmet>
+      </SafeHelmet>
       <div className="min-h-screen bg-slate-50 pb-24 md:pb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -653,14 +666,28 @@ export default function PropertyDetail() {
               {/* Gallery */}
               <div className="bg-white rounded-xl overflow-hidden shadow-md">
                 <ProtectedImageContainer propertyId={property.propertyId} className="aspect-video relative bg-slate-200">
-                  <img
-                    src={getCloudinaryLargeUrl(imgs[galleryIndex])}
-                    alt={`${getPropertyLabel(property.type) || 'อสังหาริมทรัพย์'} โครงการ ${property.title} - รูปภาพที่ ${galleryIndex + 1}`}
-                    className="w-full h-full object-cover protected-image"
-                    loading="lazy"
-                    decoding="async"
-                    draggable={false}
-                  />
+                  {imgs[galleryIndex] && isCloudinaryUrl(imgs[galleryIndex]) ? (
+                    <Image
+                      src={imgs[galleryIndex]}
+                      loader={cloudinaryLoader}
+                      alt={`${getPropertyLabel(property.type) || 'อสังหาริมทรัพย์'} โครงการ ${property.title} - รูปภาพที่ ${galleryIndex + 1}`}
+                      width={1200}
+                      height={675}
+                      sizes="(max-width: 1024px) 100vw, 66vw"
+                      className="w-full h-full object-cover protected-image"
+                      priority
+                      draggable={false}
+                    />
+                  ) : (
+                    <img
+                      src={getCloudinaryLargeUrl(imgs[galleryIndex])}
+                      alt={`${getPropertyLabel(property.type) || 'อสังหาริมทรัพย์'} โครงการ ${property.title} - รูปภาพที่ ${galleryIndex + 1}`}
+                      className="w-full h-full object-cover protected-image"
+                      loading="lazy"
+                      decoding="async"
+                      draggable={false}
+                    />
+                  )}
                 </ProtectedImageContainer>
                 {imgs.length > 1 && (
                   <div className="flex gap-2 p-2 overflow-x-auto" onContextMenu={(e) => e.preventDefault()}>
@@ -672,14 +699,28 @@ export default function PropertyDetail() {
                         className={`shrink-0 w-20 h-14 rounded-lg overflow-hidden border-2 ${i === galleryIndex ? 'border-blue-900' : 'border-transparent'}`}
                         aria-label={`ดูรูปภาพที่ ${i + 1} จากทั้งหมด ${imgs.length} รูป`}
                       >
-                        <img
-                          src={getCloudinaryThumbUrl(img)}
-                          alt={`รูปย่อที่ ${i + 1} โครงการ ${property.title}`}
-                          className="w-full h-full object-cover protected-image"
-                          loading="lazy"
-                          decoding="async"
-                          draggable={false}
-                        />
+                        {isCloudinaryUrl(img) ? (
+                          <Image
+                            src={img}
+                            loader={cloudinaryLoader}
+                            alt={`รูปย่อที่ ${i + 1} โครงการ ${property.title}`}
+                            width={80}
+                            height={56}
+                            sizes="80px"
+                            className="w-full h-full object-cover protected-image"
+                            loading="lazy"
+                            draggable={false}
+                          />
+                        ) : (
+                          <img
+                            src={getCloudinaryThumbUrl(img)}
+                            alt={`รูปย่อที่ ${i + 1} โครงการ ${property.title}`}
+                            className="w-full h-full object-cover protected-image"
+                            loading="lazy"
+                            decoding="async"
+                            draggable={false}
+                          />
+                        )}
                       </button>
                     ))}
                   </div>
@@ -860,7 +901,7 @@ export default function PropertyDetail() {
                           return (
                             <Link
                               key={index}
-                              to={`/properties?search=${encodeURIComponent(tag)}`}
+                              href={`/properties?search=${encodeURIComponent(tag)}`}
                               className="px-3 py-1.5 bg-blue-50 text-gray-700 text-sm rounded-full border border-blue-200 font-medium hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors cursor-pointer inline-block"
                             >
                               {highlightText(tag, searchQuery)}
@@ -871,7 +912,7 @@ export default function PropertyDetail() {
                           return (
                             <Link
                               key={index}
-                              to={`/properties?search=${encodeURIComponent(tag)}`}
+                              href={`/properties?search=${encodeURIComponent(tag)}`}
                               className="px-3 py-1.5 bg-blue-50 text-gray-700 text-sm rounded-full border border-blue-200 font-medium hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors cursor-pointer inline-block"
                             >
                               {tag}

@@ -1,5 +1,7 @@
+'use client'
 import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import {
   LayoutDashboard,
@@ -22,24 +24,24 @@ import {
 } from 'lucide-react'
 
 const allNavItems = [
-  { to: '/sps-internal-admin', end: true, label: 'แดชบอร์ด', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'member'] },
-  { to: '/sps-internal-admin/properties', end: false, label: 'จัดการทรัพย์', icon: Building2, roles: ['super_admin', 'admin'] },
-  { to: '/sps-internal-admin/my-properties', end: false, label: 'ประกาศของฉัน', icon: FileText, roles: ['member'] },
-  { to: '/sps-internal-admin/properties/new', end: true, label: 'เพิ่มประกาศใหม่', icon: Building2, roles: ['member'] },
-  { to: '/sps-internal-admin/pending-properties', end: false, label: 'ตรวจสอบประกาศ', icon: FileCheck, roles: ['super_admin', 'admin'] },
-  { to: '/sps-internal-admin/hero-slides', end: false, label: 'จัดการสไลด์หน้าแรก', icon: Images, roles: ['super_admin', 'admin'] },
-  { to: '/sps-internal-admin/homepage-sections', end: false, label: 'จัดการหน้าแรก', icon: LayoutList, roles: ['super_admin', 'admin'] },
-  { to: '/sps-internal-admin/popular-locations', end: false, label: 'จัดการทำเลยอดฮิต', icon: MapPin, roles: ['super_admin', 'admin'] },
-  { to: '/sps-internal-admin/blogs', end: false, label: 'จัดการบทความ', icon: BookOpen, roles: ['super_admin', 'admin'] },
-  { to: '/sps-internal-admin/users', end: false, label: 'จัดการสมาชิก', icon: Users, roles: ['super_admin'] },
-  { to: '/sps-internal-admin/settings', end: false, label: 'การตั้งค่าระบบ', icon: Settings, roles: ['super_admin'] },
-  { to: '/sps-internal-admin/leads', end: false, label: 'จัดการนัดหมาย', icon: Inbox, roles: ['super_admin', 'admin', 'member'] },
-  { to: '/sps-internal-admin/loan-requests', end: false, label: 'จัดการสินเชื่อ', icon: CreditCard, roles: ['super_admin'] },
-  { to: '/sps-internal-admin/activities', end: false, label: 'บันทึกกิจกรรม', icon: Activity, roles: ['super_admin', 'admin'] },
+  { href: '/sps-internal-admin', end: true, label: 'แดชบอร์ด', icon: LayoutDashboard, roles: ['super_admin', 'admin', 'member'] },
+  { href: '/sps-internal-admin/properties', end: false, label: 'จัดการทรัพย์', icon: Building2, roles: ['super_admin', 'admin'] },
+  { href: '/sps-internal-admin/my-properties', end: false, label: 'ประกาศของฉัน', icon: FileText, roles: ['member'] },
+  { href: '/sps-internal-admin/properties/new', end: true, label: 'เพิ่มประกาศใหม่', icon: Building2, roles: ['member'] },
+  { href: '/sps-internal-admin/pending-properties', end: false, label: 'ตรวจสอบประกาศ', icon: FileCheck, roles: ['super_admin', 'admin'] },
+  { href: '/sps-internal-admin/hero-slides', end: false, label: 'จัดการสไลด์หน้าแรก', icon: Images, roles: ['super_admin', 'admin'] },
+  { href: '/sps-internal-admin/homepage-sections', end: false, label: 'จัดการหน้าแรก', icon: LayoutList, roles: ['super_admin', 'admin'] },
+  { href: '/sps-internal-admin/popular-locations', end: false, label: 'จัดการทำเลยอดฮิต', icon: MapPin, roles: ['super_admin', 'admin'] },
+  { href: '/sps-internal-admin/blogs', end: false, label: 'จัดการบทความ', icon: BookOpen, roles: ['super_admin', 'admin'] },
+  { href: '/sps-internal-admin/users', end: false, label: 'จัดการสมาชิก', icon: Users, roles: ['super_admin'] },
+  { href: '/sps-internal-admin/settings', end: false, label: 'การตั้งค่าระบบ', icon: Settings, roles: ['super_admin'] },
+  { href: '/sps-internal-admin/leads', end: false, label: 'จัดการนัดหมาย', icon: Inbox, roles: ['super_admin', 'admin', 'member'] },
+  { href: '/sps-internal-admin/loan-requests', end: false, label: 'จัดการสินเชื่อ', icon: CreditCard, roles: ['super_admin'] },
+  { href: '/sps-internal-admin/activities', end: false, label: 'บันทึกกิจกรรม', icon: Activity, roles: ['super_admin', 'admin'] },
 ]
 
 // ─── Sidebar content (shared between desktop & mobile drawer) ───────────────
-function SidebarContent({ navItems, userRole, getRoleDisplayName, handleLogout, onNavClick = () => { } }) {
+function SidebarContent({ navItems, userRole, getRoleDisplayName, handleLogout, onNavClick = () => { }, pathname }) {
   return (
     <>
       <div className="p-6 border-b border-blue-800">
@@ -51,32 +53,31 @@ function SidebarContent({ navItems, userRole, getRoleDisplayName, handleLogout, 
       </div>
 
       <nav className="flex-1 p-4 space-y-1 overflow-y-auto admin-scrollbar">
-        {navItems.map(({ to, end, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            onClick={onNavClick}
-            className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-lg transition text-sm ${isActive ? 'bg-yellow-400 text-yellow-900 font-semibold' : 'text-blue-100 hover:bg-blue-800'
-              }`
-            }
-          >
-            <Icon className="h-5 w-5 shrink-0" />
-            <span className="truncate">{label}</span>
-          </NavLink>
-        ))}
+        {navItems.map(({ href, end, label, icon: Icon }) => {
+          const isActive = end ? pathname === href : pathname.startsWith(href)
+          return (
+            <Link
+              key={href}
+              href={href}
+              onClick={onNavClick}
+              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition text-sm ${isActive ? 'bg-yellow-400 text-yellow-900 font-semibold' : 'text-blue-100 hover:bg-blue-800'}`}
+            >
+              <Icon className="h-5 w-5 shrink-0" />
+              <span className="truncate">{label}</span>
+            </Link>
+          )
+        })}
       </nav>
 
       <div className="p-4 border-t border-blue-800 space-y-1">
-        <NavLink
-          to="/"
+        <Link
+          href="/"
           onClick={onNavClick}
           className="flex items-center gap-3 px-4 py-3 rounded-lg text-blue-100 hover:bg-blue-800 text-sm transition"
         >
           <Home className="h-5 w-5 shrink-0" />
           <span>กลับเว็บหลัก</span>
-        </NavLink>
+        </Link>
         <button
           type="button"
           onClick={handleLogout}
@@ -90,14 +91,15 @@ function SidebarContent({ navItems, userRole, getRoleDisplayName, handleLogout, 
   )
 }
 
-export default function AdminLayout() {
+export default function AdminLayout({ children }) {
   const { logout, userRole, hasRole } = useAdminAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
+  const pathname = usePathname()
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   const handleLogout = async () => {
     await logout()
-    navigate('/sps-internal-admin/login', { replace: true })
+    router.replace('/sps-internal-admin/login')
   }
 
   const navItems = allNavItems.filter((item) => {
@@ -150,7 +152,7 @@ export default function AdminLayout() {
 
         {/* Main Content */}
         <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
-          <Outlet />
+          {children}
         </main>
       </div>
 
@@ -187,6 +189,7 @@ export default function AdminLayout() {
           getRoleDisplayName={getRoleDisplayName}
           handleLogout={handleLogout}
           onNavClick={() => setDrawerOpen(false)}
+          pathname={pathname}
         />
       </aside>
     </div>

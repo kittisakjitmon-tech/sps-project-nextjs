@@ -1,9 +1,20 @@
-import { Navigate, useLocation } from 'react-router-dom'
+'use client'
+import { useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { usePublicAuth } from '../context/PublicAuthContext'
 
 export default function PublicProtectedRoute({ children, requiredRoles }) {
   const { user, userRole, loading, hasRole } = usePublicAuth()
-  const location = useLocation()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (loading) return
+    if (!user) {
+      const returnUrl = pathname ? `?from=${encodeURIComponent(pathname)}` : ''
+      router.replace(`/login${returnUrl}`)
+    }
+  }, [user, loading, pathname, router])
 
   if (loading) {
     return (
@@ -14,7 +25,7 @@ export default function PublicProtectedRoute({ children, requiredRoles }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />
+    return null
   }
 
   // Check role if requiredRoles is specified

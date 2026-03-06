@@ -1,5 +1,6 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
 import { collection, query, where, limit, getDocs } from 'firebase/firestore'
 import { db } from '../lib/firebase'
 import { MapPin, Bed, Bath, Maximize2 } from 'lucide-react'
@@ -21,6 +22,10 @@ export default function RelatedProperties({ currentPropertyId, district, type })
         const fetchRelated = async () => {
             try {
                 setLoading(true)
+                if (!db) {
+                    setRelated([])
+                    return
+                }
                 const seen = new Set([currentPropertyId])
                 let items = []
 
@@ -115,7 +120,7 @@ export default function RelatedProperties({ currentPropertyId, district, type })
                     const coverImage = (prop.images && prop.images.length > 0) ? prop.images[0] : null
 
                     return (
-                        <Link key={prop.id} to={`/properties/${prop.id}`} className="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
+                        <Link key={prop.id} href={`/properties/${prop.id}`} className="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition">
                             <div className="aspect-[4/3] bg-slate-200 overflow-hidden relative">
                                 {coverImage ? (
                                     <img src={getCloudinaryThumbUrl(coverImage)} alt={prop.title} width={400} height={300} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />

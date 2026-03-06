@@ -13,7 +13,7 @@ const LONGDO_SCRIPT_ID = 'longdo-map-sdk'
 let longdoLoadingPromise = null
 
 function getApiKey() {
-  return import.meta.env.VITE_LONGDO_MAP_KEY
+  return process.env.NEXT_PUBLIC_LONGDO_MAP_KEY
 }
 
 export function loadLongdoMap() {

@@ -1,9 +1,19 @@
-import { Navigate, useLocation } from 'react-router-dom'
+'use client'
+import { useEffect } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAdminAuth } from '../context/AdminAuthContext'
 
 export default function AdminProtectedRoute({ children, requiredRoles }) {
   const { user, userRole, loading, hasRole } = useAdminAuth()
-  const location = useLocation()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  useEffect(() => {
+    if (loading) return
+    if (!user) {
+      router.replace('/sps-internal-admin/login')
+    }
+  }, [user, loading, router])
 
   if (loading) {
     return (
@@ -14,7 +24,7 @@ export default function AdminProtectedRoute({ children, requiredRoles }) {
   }
 
   if (!user) {
-    return <Navigate to="/sps-internal-admin/login" state={{ from: location }} replace />
+    return null
   }
 
   // Block agent from accessing /sps-internal-admin routes

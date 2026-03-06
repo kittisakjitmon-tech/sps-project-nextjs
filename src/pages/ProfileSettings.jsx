@@ -1,6 +1,7 @@
+'use client'
 import { useState, useEffect } from 'react'
 import { usePublicAuth } from '../context/PublicAuthContext'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 import { updatePassword, reauthenticateWithCredential, EmailAuthProvider, updateProfile } from 'firebase/auth'
 import { doc, getDoc, updateDoc, query, where, getDocs, collection, serverTimestamp } from 'firebase/firestore'
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage'
@@ -11,7 +12,7 @@ import { User, Phone, MessageCircle, Facebook, ImagePlus, Lock, X, Save } from '
 
 export default function ProfileSettings() {
   const { user, userRole, isAgent } = usePublicAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [changingPassword, setChangingPassword] = useState(false)
@@ -39,13 +40,13 @@ export default function ProfileSettings() {
 
   useEffect(() => {
     if (!user) {
-      navigate('/')
+      router.push('/')
       return
     }
 
     // Only allow agent to access this page
     if (!isAgent()) {
-      navigate('/')
+      router.push('/')
       return
     }
 
@@ -54,6 +55,7 @@ export default function ProfileSettings() {
 
   const loadUserData = async () => {
     if (!user) return
+    if (!publicDb) return
 
     try {
       const userDoc = await getDoc(doc(publicDb, 'users', user.uid))
@@ -98,6 +100,7 @@ export default function ProfileSettings() {
 
   const checkUsernameExists = async (username, currentUserId) => {
     if (!username || username === (user.email?.split('@')[0] || '')) return false
+    if (!publicDb) return false
 
     const q = query(collection(publicDb, 'users'), where('username', '==', username))
     const snapshot = await getDocs(q)
@@ -171,6 +174,11 @@ export default function ProfileSettings() {
     setSuccessMessage(null)
 
     try {
+      if (!publicDb) {
+        setErrorMessage('Firebase is not available')
+        setSaving(false)
+        return
+      }
       // Validate username
       if (!form.username.trim()) {
         setErrorMessage('กรุณากรอก Username')

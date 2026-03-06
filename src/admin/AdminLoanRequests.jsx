@@ -1,5 +1,6 @@
+'use client'
 import { useState, useEffect, useMemo } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 import { useAdminAuth } from '../context/AdminAuthContext'
 import {
   getLoanRequestsSnapshot,
@@ -72,7 +73,7 @@ function getLineAddUrl(lineId) {
 
 export default function AdminLoanRequests() {
   const { isSuperAdmin } = useAdminAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
   const [requests, setRequests] = useState([])
   const [loading, setLoading] = useState(true)
   const [accessDenied, setAccessDenied] = useState(false)
@@ -179,7 +180,7 @@ export default function AdminLoanRequests() {
         <p className="text-slate-600 mb-4">เฉพาะ Super Admin เท่านั้นที่เข้าถึงหน้านี้ได้</p>
         <button
           type="button"
-          onClick={() => navigate('/sps-internal-admin')}
+          onClick={() => router.push('/sps-internal-admin')}
           className="px-6 py-2 rounded-lg bg-blue-900 text-white hover:bg-blue-800"
         >
           กลับแดชบอร์ด

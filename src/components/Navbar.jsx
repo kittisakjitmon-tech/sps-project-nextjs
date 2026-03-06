@@ -1,5 +1,7 @@
+'use client'
 import { useEffect, useRef, useState } from 'react'
-import { Link } from 'react-router-dom'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import {
   Menu,
   X,
@@ -18,19 +20,18 @@ import {
   LogIn,
 } from 'lucide-react'
 import { usePublicAuth } from '../context/PublicAuthContext'
-import { useNavigate } from 'react-router-dom'
-import logo from '../assets/logo.png'; // นำเข้าไฟล์โลโก้
+// Logo: place logo.png in public folder
 
 const buyHomeLinks = [
-  { to: '/properties?listingType=sale', label: 'รวมโครงการทั้งหมด', icon: Home },
-  { to: '/properties?listingType=sale&propertyCondition=มือ 1', label: 'บ้านมือ 1', icon: Sparkles },
-  { to: '/properties?listingType=sale&propertyCondition=มือ 2', label: 'บ้านมือ 2', icon: House },
-  { to: '/properties?listingType=rent&subListingType=installment_only', label: 'บ้านผ่อนตรง', icon: Flame, highlight: true },
+  { href: '/properties?listingType=sale', label: 'รวมโครงการทั้งหมด', icon: Home },
+  { href: '/properties?listingType=sale&propertyCondition=มือ 1', label: 'บ้านมือ 1', icon: Sparkles },
+  { href: '/properties?listingType=sale&propertyCondition=มือ 2', label: 'บ้านมือ 2', icon: House },
+  { href: '/properties?listingType=rent&subListingType=installment_only', label: 'บ้านผ่อนตรง', icon: Flame, highlight: true },
 ]
 
 const serviceLinks = [
-  { to: '/loan-services', label: 'สินเชื่อ & ปิดภาระหนี้', icon: CreditCard },
-  { to: '/post', label: 'ฝากขาย / เช่า', icon: Megaphone },
+  { href: '/loan-services', label: 'สินเชื่อ & ปิดภาระหนี้', icon: CreditCard },
+  { href: '/post', label: 'ฝากขาย / เช่า', icon: Megaphone },
 ]
 
 export default function Navbar() {
@@ -45,7 +46,7 @@ export default function Navbar() {
   const serviceCloseTimerRef = useRef(null)
   const userMenuCloseTimerRef = useRef(null)
   const { user, userRole, userProfile, logout, isAgent } = usePublicAuth()
-  const navigate = useNavigate()
+  const router = useRouter()
 
   const clearBuyCloseTimer = () => {
     if (buyCloseTimerRef.current) {
@@ -95,7 +96,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     await logout()
     setUserMenuOpen(false)
-    navigate('/')
+    router.push('/')
   }
 
   useEffect(() => {
@@ -123,10 +124,10 @@ export default function Navbar() {
       <nav className="max-w-7xl mx-auto px-3 sm:px-5 lg:px-8">
         <div className="flex items-center justify-between h-16">
         
-          <Link to="/" className="flex items-center gap-2 shrink-0 min-w-0">
+          <Link href="/" className="flex items-center gap-2 shrink-0 min-w-0">
           <div className="flex items-center gap-3">
             {/* ส่วนของรูปภาพโลโก้ */}
-            <img src={logo} alt="SPS Logo" width={100} height={40} className="h-10 w-auto" />
+            <img src="/icon.png" alt="SPS Logo" width={100} height={40} className="h-10 w-auto" />
 
             {/* ส่วนของข้อความที่จัดเรียงใหม่ */}
             <div className="flex flex-col leading-tight min-w-0">
@@ -142,7 +143,7 @@ export default function Navbar() {
 
           {/* Desktop */}
           <div ref={desktopMenuRef} className="hidden lg:flex items-center gap-2 xl:gap-4">
-            <Link to="/" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm whitespace-nowrap">
+            <Link href="/" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm whitespace-nowrap">
               หน้าหลัก
             </Link>
 
@@ -173,10 +174,10 @@ export default function Navbar() {
                   buyMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-1 pointer-events-none'
                 }`}
               >
-                {buyHomeLinks.map(({ to, label, icon: Icon, highlight }) => (
+                {buyHomeLinks.map(({ href, label, icon: Icon, highlight }) => (
                   <Link
-                    key={to}
-                    to={to}
+                    key={href}
+                    href={href}
                     className={`flex items-center gap-2 px-4 py-2.5 text-sm transition ${
                       highlight
                         ? 'font-semibold text-red-600 hover:bg-red-50'
@@ -194,11 +195,11 @@ export default function Navbar() {
               </div>
             </div>
 
-            <Link to="/properties?listingType=rent&subListingType=rent_only" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm whitespace-nowrap">
+            <Link href="/properties?listingType=rent&subListingType=rent_only" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm whitespace-nowrap">
               เช่า
             </Link>
 
-            <Link to="/blogs" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm flex items-center gap-1 whitespace-nowrap">
+            <Link href="/blogs" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm flex items-center gap-1 whitespace-nowrap">
               <BookOpen className="h-4 w-4" />
               บทความ
             </Link>
@@ -230,10 +231,10 @@ export default function Navbar() {
                   serviceMenuOpen ? 'opacity-100 translate-y-0 pointer-events-auto' : 'opacity-0 -translate-y-1 pointer-events-none'
                 }`}
               >
-                {serviceLinks.map(({ to, label, icon: Icon }) => (
+                {serviceLinks.map(({ href, label, icon: Icon }) => (
                   <Link
-                    key={to}
-                    to={to}
+                    key={href}
+                    href={href}
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition"
                     onClick={() => {
                       clearServiceCloseTimer()
@@ -247,12 +248,12 @@ export default function Navbar() {
               </div>
             </div>
 
-            <Link to="/contact" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm whitespace-nowrap">
+            <Link href="/contact" className="text-slate-600 hover:text-blue-900 font-medium transition text-sm whitespace-nowrap">
               ติดต่อเรา
             </Link>
 
             <Link
-              to="/favorites"
+              href="/favorites"
               className="text-slate-600 hover:text-red-500 font-medium transition flex items-center gap-1 whitespace-nowrap"
             >
               <Heart className="h-4 w-4" />
@@ -262,7 +263,7 @@ export default function Navbar() {
             {/* Login Button or User Menu */}
             {!user ? (
               <Link
-                to="/login"
+                href="/login"
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-900 text-white hover:bg-blue-800 transition font-medium whitespace-nowrap"
               >
                 <LogIn className="h-4 w-4" />
@@ -319,7 +320,7 @@ export default function Navbar() {
                   </div>
                   {isAgent() && (
                     <Link
-                      to="/profile-settings"
+                      href="/profile-settings"
                       onClick={() => {
                         clearUserMenuCloseTimer()
                         setUserMenuOpen(false)
@@ -344,7 +345,7 @@ export default function Navbar() {
             )}
           
             <Link
-              to="/post"
+              href="/post"
               className="inline-flex items-center px-4 py-2 rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 text-white font-semibold whitespace-nowrap hover:shadow-md hover:-translate-y-0.5 transition-all duration-300"
             >
               ลงประกาศฟรี
@@ -384,10 +385,10 @@ export default function Navbar() {
               </button>
               {mobileBuyOpen && (
                 <div className="ml-3 mr-1 rounded-lg border border-slate-200 bg-slate-50/70 overflow-hidden">
-                  {buyHomeLinks.map(({ to, label, icon: Icon, highlight }) => (
+                  {buyHomeLinks.map(({ href, label, icon: Icon, highlight }) => (
                     <Link
-                      key={to}
-                      to={to}
+                      key={href}
+                      href={href}
                       onClick={() => {
                         setMobileOpen(false)
                         setMobileBuyOpen(false)
@@ -404,7 +405,7 @@ export default function Navbar() {
               )}
 
               <Link
-                to="/properties?listingType=rent&subListingType=rent_only"
+                href="/properties?listingType=rent&subListingType=rent_only"
                 onClick={() => setMobileOpen(false)}
                 className="px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-50 font-medium"
               >
@@ -412,7 +413,7 @@ export default function Navbar() {
               </Link>
 
               <Link
-                to="/blogs"
+                href="/blogs"
                 onClick={() => setMobileOpen(false)}
                 className="px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2"
               >
@@ -430,10 +431,10 @@ export default function Navbar() {
               </button>
               {mobileServiceOpen && (
                 <div className="ml-3 mr-1 rounded-lg border border-slate-200 bg-slate-50/70 overflow-hidden">
-                  {serviceLinks.map(({ to, label, icon: Icon }) => (
+                  {serviceLinks.map(({ href, label, icon: Icon }) => (
                     <Link
-                      key={to}
-                      to={to}
+                      key={href}
+                      href={href}
                       onClick={() => {
                         setMobileOpen(false)
                         setMobileServiceOpen(false)
@@ -448,14 +449,14 @@ export default function Navbar() {
               )}
 
               <Link
-                to="/contact"
+                href="/contact"
                 onClick={() => setMobileOpen(false)}
                 className="px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-50 font-medium"
               >
                 ติดต่อเรา
               </Link>
               <Link
-                to="/favorites"
+                href="/favorites"
                 onClick={() => setMobileOpen(false)}
                 className="px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2"
               >
@@ -464,7 +465,7 @@ export default function Navbar() {
               </Link>
               {!user ? (
                 <Link
-                  to="/login"
+                  href="/login"
                   onClick={() => setMobileOpen(false)}
                   className="px-4 py-3 rounded-lg text-blue-900 hover:bg-blue-50 font-medium flex items-center gap-2"
                 >
@@ -475,7 +476,7 @@ export default function Navbar() {
                 <>
                   {isAgent() && (
                     <Link
-                      to="/profile-settings"
+                      href="/profile-settings"
                       onClick={() => setMobileOpen(false)}
                       className="px-4 py-3 rounded-lg text-slate-700 hover:bg-slate-50 font-medium flex items-center gap-2"
                     >
@@ -503,7 +504,7 @@ export default function Navbar() {
                 โทรหาเรา: 095 552 0801
               </a>
               <Link
-                to="/post"
+                href="/post"
                 onClick={() => setMobileOpen(false)}
                 className="mx-4 mt-2 inline-flex items-center justify-center px-4 py-3 rounded-xl bg-gradient-to-r from-blue-900 to-blue-700 text-white font-semibold hover:shadow-md"
               >

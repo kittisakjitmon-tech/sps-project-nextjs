@@ -25,7 +25,7 @@ export default function PropertiesMap({ properties, className = '' }) {
       .catch((error) => {
         if (!mounted) return
         console.error('PropertiesMap: failed to load Longdo Map API', error)
-        const msg = error?.message?.includes('VITE_LONGDO_MAP_KEY') || !import.meta.env.VITE_LONGDO_MAP_KEY
+        const msg = error?.message?.includes('LONGDO_MAP_KEY') || !process.env.NEXT_PUBLIC_LONGDO_MAP_KEY
           ? 'ไม่สามารถโหลดแผนที่ได้ (กรุณาตั้งค่า VITE_LONGDO_MAP_KEY ใน .env)'
           : 'ไม่สามารถโหลดแผนที่ได้'
         setMapLoadError(msg)

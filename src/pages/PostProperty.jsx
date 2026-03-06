@@ -1,5 +1,6 @@
+'use client'
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useRouter } from 'next/navigation'
 import { usePublicAuth } from '../context/PublicAuthContext'
 import { ChevronLeft, ChevronRight, Upload, X, Check, AlertCircle, Target, Zap, Shield, Phone, Lock } from 'lucide-react'
 import PageLayout from '../components/PageLayout'
@@ -27,7 +28,7 @@ const SUGGESTED_TAGS = [
 ]
 
 export default function PostProperty() {
-  const navigate = useNavigate()
+  const router = useRouter()
   const { user } = usePublicAuth()
   const { settings } = useSystemSettings()
   const [step, setStep] = useState(1)
@@ -262,7 +263,7 @@ export default function PostProperty() {
                 : 'ระบบได้รับข้อมูลแล้ว เจ้าหน้าที่จะตรวจสอบและอนุมัติภายใน 24 ชม.'}
             </p>
             <button
-              onClick={() => navigate('/')}
+              onClick={() => router.push('/')}
               className="px-6 py-3 bg-blue-900 text-white font-semibold rounded-lg hover:bg-blue-800 transition"
             >
               กลับหน้าหลัก
